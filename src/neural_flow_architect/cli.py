@@ -79,6 +79,39 @@ def status() -> None:
 
 
 @app.command()
+def soak(
+    duration: float = typer.Option(
+        300.0, help="Simulated stream seconds (not wall clock; uses fast replay)"
+    ),
+    channels: int = typer.Option(8, help="Channel count"),
+    memory_limit_mb: float = typer.Option(512.0, help="Fail if peak RSS exceeds this"),
+) -> None:
+    """Long-session soak test (fast-forward) for multi-hour stability."""
+    from neural_flow_architect.eval.soak import run_soak_sync
+
+    _banner()
+    console.print(
+        f"[green]Soak test[/] simulated_duration={duration}s channels={channels}"
+    )
+    report = run_soak_sync(
+        duration_sec=duration, channels=channels, memory_limit_mb=memory_limit_mb
+    )
+    data = report.to_dict()
+    table = Table(title="Soak report", show_header=True, header_style="bold")
+    table.add_column("Key")
+    table.add_column("Value")
+    for k, v in data.items():
+        if k == "notes":
+            continue
+        table.add_row(k, str(v))
+    console.print(table)
+    for note in data.get("notes") or []:
+        console.print(f"[dim]{note}[/]")
+    if not data.get("ok"):
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def report(
     data_dir: Optional[str] = typer.Option(None, help="Override data directory"),
 ) -> None:

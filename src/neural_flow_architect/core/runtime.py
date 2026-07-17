@@ -139,7 +139,13 @@ class NeuralFlowRuntime:
             raise RuntimeError("Consent scope 'process_realtime' is not granted")
 
         await self.adapter.connect()
-        self.insights.start_session(adapter=self.settings.adapter)
+        recipe = "study"
+        if self.context_provider is not None:
+            try:
+                recipe = self.context_provider().recipe or "study"
+            except Exception:
+                pass
+        self.insights.start_session(adapter=self.settings.adapter, recipe=recipe)
         self._running = True
         ticks: list[RuntimeTick] = []
         loop = asyncio.get_running_loop()

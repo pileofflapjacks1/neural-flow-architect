@@ -76,6 +76,21 @@ export type NfaState = {
     from_category?: string;
   } | null;
   audit_recent?: Array<Record<string, unknown>>;
+  pending_block_review?: {
+    session_id?: string;
+    prompt?: string;
+    flow_minutes?: number;
+    actions_count?: number;
+    undos_count?: number;
+  } | null;
+  caregiver_checklist?: {
+    completed?: boolean;
+    progress?: number;
+    total?: number;
+    items?: Array<{ id: string; label: string; done: boolean }>;
+  };
+  scan_mode?: boolean;
+  scan_interval_ms?: number;
   preferences?: Record<string, unknown>;
   context?: Record<string, unknown>;
   ts?: string;
@@ -298,6 +313,23 @@ export function useNfaSession() {
     }
   }, []);
 
+  const submitBlockReview = useCallback(
+    async (payload: {
+      helpful_block: boolean | null;
+      architect_helpful: boolean | null;
+      note?: string;
+      skip?: boolean;
+    }) => {
+      try {
+        const res = await post("/session/block_review", payload);
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "block review failed");
+      }
+    },
+    []
+  );
+
   return {
     state,
     connected,
@@ -316,6 +348,7 @@ export function useNfaSession() {
     feedback,
     clearFailsafe,
     acceptRecipeSuggestion,
+    submitBlockReview,
     refresh,
   };
 }

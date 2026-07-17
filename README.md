@@ -198,6 +198,7 @@ nfa bench --channels 8 --iterations 40
 nfa contract --adapter simulator   # adapter golden suite
 nfa contract --adapter replay
 nfa report                         # local trust + session summary
+nfa soak --duration 300            # multi-minute simulated soak (fast wall clock)
 ```
 
 Optional app-aware protection (local window titles only):

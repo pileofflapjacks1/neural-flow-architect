@@ -14,6 +14,8 @@ type A11y = {
   quiet_hours_start?: number;
   quiet_hours_end?: number;
   suggest_recipe_from_app?: boolean;
+  scan_mode?: boolean;
+  scan_interval_ms?: number;
 };
 
 export function A11yPanel() {
@@ -159,6 +161,25 @@ export function A11yPanel() {
           onChange={(e) => save({ suggest_recipe_from_app: e.target.checked })}
         />
         Suggest recipe from active app
+      </label>
+      <label className="a11y-row">
+        <input
+          type="checkbox"
+          checked={!!a11y.scan_mode}
+          onChange={(e) => save({ scan_mode: e.target.checked })}
+        />
+        Scan mode (sequential highlight — Space/Enter select)
+      </label>
+      <label className="a11y-row">
+        Scan interval ms
+        <input
+          type="number"
+          min={600}
+          max={4000}
+          step={100}
+          value={a11y.scan_interval_ms ?? 1400}
+          onChange={(e) => save({ scan_interval_ms: Number(e.target.value) })}
+        />
       </label>
       <div className="action-row">
         <button type="button" className="target-btn secondary" onClick={exportProfile}>

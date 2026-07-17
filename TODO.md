@@ -55,6 +55,12 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Trust panel + audit in Insights UI
 - [x] `nfa report` CLI
 - [x] Version 0.2.0
+- [x] End-of-block session review
+- [x] Scan/dwell sequential control mode
+- [x] Caregiver independence checklist
+- [x] Personal flow signature v0
+- [x] `nfa soak` long-session stability test
+- [x] Good-first-issues list (docs/CONTRIBUTING_ISSUES.md)
 - [x] Quality metrics (clip/flat/noise/dropout heuristics + overall score)
 - [x] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
 - [x] Optional connectivity feature flag (`include_connectivity`)

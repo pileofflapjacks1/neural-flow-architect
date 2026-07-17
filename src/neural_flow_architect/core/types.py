@@ -151,6 +151,9 @@ class UserPreferences(BaseModel):
     quiet_hours_end: int = Field(default=7, ge=0, le=23)
     # Soft recipe suggestion from active app (never auto-switch without consent)
     suggest_recipe_from_app: bool = True
+    # Zero-precision sequential scanning mode
+    scan_mode: bool = False
+    scan_interval_ms: int = Field(default=1400, ge=600, le=4000)
 
 
 class WorldSnapshot(BaseModel):

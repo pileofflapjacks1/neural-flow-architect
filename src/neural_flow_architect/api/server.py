@@ -105,6 +105,18 @@ class QuietHoursBody(BaseModel):
     end_hour: int | None = None
 
 
+class BlockReviewBody(BaseModel):
+    helpful_block: bool | None = None
+    architect_helpful: bool | None = None
+    note: str = ""
+    skip: bool = False
+
+
+class CaregiverItemBody(BaseModel):
+    item_id: str
+    done: bool = True
+
+
 def create_app(
     settings: Settings | None = None,
     controller: SessionController | None = None,
@@ -256,6 +268,27 @@ def create_app(
     @app.post("/recipe/accept_suggestion")
     async def accept_recipe_suggestion() -> dict[str, Any]:
         return session.accept_recipe_suggestion()
+
+    @app.post("/session/block_review")
+    async def block_review(body: BlockReviewBody) -> dict[str, Any]:
+        return session.submit_block_review(
+            helpful_block=body.helpful_block,
+            architect_helpful=body.architect_helpful,
+            note=body.note,
+            skip=body.skip,
+        )
+
+    @app.get("/signature")
+    async def signature() -> dict[str, Any]:
+        return {"ok": True, "signature": session.personal_signature()}
+
+    @app.get("/caregiver")
+    async def caregiver_get() -> dict[str, Any]:
+        return {"ok": True, "checklist": session.caregiver_checklist()}
+
+    @app.post("/caregiver")
+    async def caregiver_post(body: CaregiverItemBody) -> dict[str, Any]:
+        return session.mark_caregiver_item(body.item_id, body.done)
 
     @app.get("/environment")
     async def environment() -> dict[str, Any]:

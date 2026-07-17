@@ -33,6 +33,8 @@ from neural_flow_architect.personalization.profile import UserProfile
 from neural_flow_architect.privacy.audit import AuditLog
 from neural_flow_architect.privacy.consent import ConsentScope
 from neural_flow_architect.core.quiet_hours import QuietHours
+from neural_flow_architect.core.caregiver import CaregiverChecklist
+from neural_flow_architect.personalization.signature import build_personal_signature
 
 
 StateListener = Callable[[dict[str, Any]], None]
@@ -64,6 +66,10 @@ class SessionController:
         )
         self.feedback = FeedbackStore()
         self.audit = AuditLog(self.settings.data_dir / "audit")
+        self.caregiver = CaregiverChecklist.load(
+            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
+        )
+        self._pending_block_review: dict[str, Any] | None = None
         self.runtime = self._new_runtime()
         self._task: asyncio.Task[list[RuntimeTick]] | None = None
         self._listeners: list[asyncio.Queue[dict[str, Any]]] = []
@@ -180,6 +186,12 @@ class SessionController:
             ).to_dict(),
             "recipe_suggestion": None,
             "audit_recent": self.audit.recent(10),
+            "pending_block_review": self._pending_block_review,
+            "caregiver_checklist": self.caregiver.to_dict(),
+            "personal_signature": None,
+            "scan_mode": bool(
+                getattr(self.profile.preferences, "scan_mode", False)
+            ),
             "shortcuts": [],
             "help": {
                 "user_guide": "docs/ux/USER_GUIDE.md",
@@ -205,6 +217,8 @@ class SessionController:
             "quiet_hours_start": p.quiet_hours_start,
             "quiet_hours_end": p.quiet_hours_end,
             "suggest_recipe_from_app": p.suggest_recipe_from_app,
+            "scan_mode": p.scan_mode,
+            "scan_interval_ms": p.scan_interval_ms,
             "css": {
                 "--nfa-scale": str(p.ui_scale),
                 "--target-min": f"{int(64 * p.ui_scale)}px",
@@ -325,10 +339,29 @@ class SessionController:
                 if summary is not None:
                     payload = summary.to_dict()
                     state["session"] = payload
+                    # Prompt end-of-block review
+                    self._pending_block_review = {
+                        "session_id": summary.session_id,
+                        "prompt": "Was this work block helpful?",
+                        "flow_minutes": payload.get("flow_minutes"),
+                        "actions_count": payload.get("actions_count"),
+                        "undos_count": payload.get("undos_count"),
+                    }
+                    state["pending_block_review"] = self._pending_block_review
                     note = learn_from_session_summary(self.profile, payload)
                     if note:
                         state["learning_note"] = note
                         self.profile.save(self.settings.data_dir / "profiles")
+                    self.caregiver.mark("start_session", True)
+                    self.caregiver.save(
+                        self.settings.data_dir / "profiles" / "caregiver_checklist.json"
+                    )
+                    state["caregiver_checklist"] = self.caregiver.to_dict()
+                    self.audit.record(
+                        "session.stop",
+                        "Session ended — block review pending",
+                        session_id=summary.session_id,
+                    )
             self._publish(state)
             return {"ok": True, "message": "Session stopped", "state": self._latest}
 
@@ -416,6 +449,10 @@ class SessionController:
             ).to_dict(),
             "recipe_suggestion": self._recipe_suggestion(),
             "audit_recent": self.audit.recent(10),
+            "pending_block_review": self._pending_block_review,
+            "caregiver_checklist": self.caregiver.to_dict(),
+            "scan_mode": self.profile.preferences.scan_mode,
+            "scan_interval_ms": self.profile.preferences.scan_interval_ms,
             "shortcuts": keymap_for_ui(),
             "help": self._idle_state()["help"],
             "ts": now.isoformat(),
@@ -497,6 +534,8 @@ class SessionController:
             "quiet_hours_enabled",
             "quiet_hours_start",
             "quiet_hours_end",
+            "scan_mode",
+            "scan_interval_ms",
         }
         for key, val in kwargs.items():
             if key in allowed and val is not None:
@@ -655,6 +694,10 @@ class SessionController:
             self.runtime.physical.enabled = False
             self.runtime.architect.force_idle = True
             self.audit.record("override.pause", "User paused Architect")
+            self.caregiver.mark("pause", True)
+            self.caregiver.save(
+                self.settings.data_dir / "profiles" / "caregiver_checklist.json"
+            )
         else:
             self.runtime.physical.enabled = self.settings.iot_enabled
             if self.failsafe.state.reason in {
@@ -703,10 +746,15 @@ class SessionController:
             self.runtime.insights.observe_undo()
             if peek is not None:
                 self.record_feedback(peek.tool_id, "unhelpful", note="auto:undo")
+            self.caregiver.mark("undo", True)
+            self.caregiver.save(
+                self.settings.data_dir / "profiles" / "caregiver_checklist.json"
+            )
         state = self.get_state()
         state["can_undo"] = self.undo_stack.can_undo
         state["digital"] = self.runtime.digital.snapshot()
         state["last_undo"] = result.model_dump(mode="json")
+        state["caregiver_checklist"] = self.caregiver.to_dict()
         self._publish(state)
         return {"ok": result.success, "result": result.model_dump(mode="json"), "state": state}
 
@@ -741,13 +789,102 @@ class SessionController:
             tool_id=tool_id,
             rating=rating,
         )
+        self.caregiver.mark("label_or_review", True)
+        self.caregiver.save(
+            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
+        )
         state = self.get_state()
         state["preferences"] = self.profile.preferences.model_dump()
         state["feedback"] = self.feedback.as_dict()
         state["last_feedback"] = out
         state["audit_recent"] = self.audit.recent(10)
+        state["caregiver_checklist"] = self.caregiver.to_dict()
         self._publish(state)
         return {"ok": True, **out, "state": state}
+
+    def submit_block_review(
+        self,
+        *,
+        helpful_block: bool | None,
+        architect_helpful: bool | None = None,
+        note: str = "",
+        skip: bool = False,
+    ) -> dict[str, Any]:
+        """End-of-block review after session stop."""
+        if skip:
+            self._pending_block_review = None
+            self.audit.record("block_review.skip", "Block review skipped")
+            state = self.get_state()
+            state["pending_block_review"] = None
+            self._publish(state)
+            return {"ok": True, "skipped": True, "state": state}
+
+        # Attach to last session file if current already ended
+        sessions = self.list_sessions(limit=1)
+        review_payload = {
+            "helpful_block": helpful_block,
+            "architect_helpful": architect_helpful,
+            "note": note,
+        }
+        if self.runtime.insights.current is not None:
+            self.runtime.insights.set_block_review(
+                helpful_block=helpful_block,
+                architect_helpful=architect_helpful,
+                note=note,
+            )
+            self.runtime.insights.save_current_if_any()
+        elif sessions:
+            import json
+            from pathlib import Path
+
+            sid = sessions[0].get("session_id")
+            path = self.settings.data_dir / "sessions" / f"{sid}.json"
+            if path.exists():
+                data = json.loads(path.read_text(encoding="utf-8"))
+                from datetime import datetime as _dt
+
+                data["block_review"] = {
+                    **review_payload,
+                    "timestamp": _dt.utcnow().isoformat(),
+                }
+                path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+        self.caregiver.mark("label_or_review", True)
+        self.caregiver.save(
+            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
+        )
+        self.audit.record(
+            "block_review",
+            "End-of-block review submitted",
+            **{k: v for k, v in review_payload.items() if v is not None},
+        )
+        self._pending_block_review = None
+        state = self.get_state()
+        state["pending_block_review"] = None
+        state["last_block_review"] = review_payload
+        state["caregiver_checklist"] = self.caregiver.to_dict()
+        state["personal_signature"] = self.personal_signature()
+        self._publish(state)
+        return {"ok": True, "review": review_payload, "state": state}
+
+    def personal_signature(self) -> dict[str, Any]:
+        sessions = self.list_sessions(limit=50)
+        return build_personal_signature(sessions).to_dict()
+
+    def caregiver_checklist(self) -> dict[str, Any]:
+        return self.caregiver.to_dict()
+
+    def mark_caregiver_item(self, item_id: str, done: bool = True) -> dict[str, Any]:
+        self.caregiver.mark(item_id, done)
+        if item_id == "helper_leaves" and done:
+            self.audit.record("caregiver.complete", "Helper marked setup complete")
+        self.caregiver.save(
+            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
+        )
+        state = self.get_state()
+        state["caregiver_checklist"] = self.caregiver.to_dict()
+        self._publish(state)
+        return {"ok": True, "checklist": self.caregiver.to_dict(), "state": state}
 
     def set_quiet_hours(
         self,
@@ -818,10 +955,15 @@ class SessionController:
         self.runtime.digital.set_rest_mode(True)
         self.profile.preferences.agent_paused = True
         self.profile.save(self.settings.data_dir / "profiles")
+        self.caregiver.mark("rest", True)
+        self.caregiver.save(
+            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
+        )
         state = self.get_state()
         state["agent_paused"] = True
         state["digital"] = self.runtime.digital.snapshot()
         state["mode"] = AgentMode.TRANSITION.value
+        state["caregiver_checklist"] = self.caregiver.to_dict()
         state["recipe"] = "rest"
         self._publish(state)
         return {"ok": True, "state": state}
@@ -950,8 +1092,8 @@ class SessionController:
             "state": state,
         }
 
-    def list_sessions(self) -> list[dict[str, Any]]:
-        return self.runtime.insights.list_sessions()
+    def list_sessions(self, limit: int = 20) -> list[dict[str, Any]]:
+        return self.runtime.insights.list_sessions(limit=limit)
 
     def coaching(self) -> dict[str, Any]:
         sessions = self.runtime.insights.list_sessions(limit=30)

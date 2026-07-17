@@ -9,6 +9,10 @@ import { Onboarding } from "./components/Onboarding";
 import { PresetPicker } from "./components/PresetPicker";
 import { VoiceCommandBar } from "./components/VoiceCommandBar";
 import { A11yPanel } from "./components/A11yPanel";
+import { BlockReviewModal } from "./components/BlockReviewModal";
+import { ScanMode } from "./components/ScanMode";
+import { CaregiverChecklist } from "./components/CaregiverChecklist";
+import { SignaturePanel } from "./components/SignaturePanel";
 import { useNfaSession } from "./hooks/useNfaSession";
 import { useKeyboardIntents } from "./hooks/useKeyboardIntents";
 
@@ -48,15 +52,35 @@ export function App() {
     clearFailsafe,
     refresh,
     acceptRecipeSuggestion,
+    submitBlockReview,
   } = useNfaSession();
   const [showWhy, setShowWhy] = useState(false);
-  const [tab, setTab] = useState<"live" | "insights" | "coaching" | "access">("live");
+  const [tab, setTab] = useState<
+    "live" | "insights" | "coaching" | "access" | "setup"
+  >("live");
   const [onboardingDone, setOnboardingDone] = useState(false);
 
   const simple = state.simple_mode !== false;
   const a11y = state.a11y;
-  const keyboardOn = a11y?.keyboard_enabled !== false;
+  const scanOn = !!(state.scan_mode || a11y?.scan_mode);
+  const keyboardOn = a11y?.keyboard_enabled !== false && !scanOn;
   useKeyboardIntents(keyboardOn);
+
+  const scanActions = [
+    {
+      id: "pause",
+      label: state.agent_paused ? "Resume" : "Pause",
+      run: () => setPaused(!state.agent_paused),
+    },
+    { id: "undo", label: "Undo", run: () => undo() },
+    { id: "rest", label: "Rest", run: () => restMode() },
+    {
+      id: "session",
+      label: state.running ? "Stop" : "Start",
+      run: () => (state.running ? stop() : start("simulator")),
+    },
+    { id: "why", label: "Why?", run: () => setShowWhy(true) },
+  ];
 
   useEffect(() => {
     const root = document.documentElement;
@@ -104,28 +128,36 @@ export function App() {
         />
       </header>
 
-      {/* Always-visible emergency controls */}
-      <div className="sticky-controls" role="toolbar" aria-label="Primary controls">
-        <button
-          type="button"
-          className="target-btn override"
-          onClick={() => setPaused(!state.agent_paused)}
-          aria-pressed={state.agent_paused}
-        >
-          {state.agent_paused ? "Resume" : "Pause"}
-        </button>
-        <button
-          type="button"
-          className="target-btn"
-          onClick={() => undo()}
-          disabled={!state.can_undo}
-        >
-          Undo
-        </button>
-        <button type="button" className="target-btn secondary" onClick={() => restMode()}>
-          Rest
-        </button>
-      </div>
+      {/* Always-visible emergency controls OR scan mode */}
+      {scanOn ? (
+        <ScanMode
+          enabled
+          intervalMs={state.scan_interval_ms || a11y?.scan_interval_ms || 1400}
+          actions={scanActions}
+        />
+      ) : (
+        <div className="sticky-controls" role="toolbar" aria-label="Primary controls">
+          <button
+            type="button"
+            className="target-btn override"
+            onClick={() => setPaused(!state.agent_paused)}
+            aria-pressed={state.agent_paused}
+          >
+            {state.agent_paused ? "Resume" : "Pause"}
+          </button>
+          <button
+            type="button"
+            className="target-btn"
+            onClick={() => undo()}
+            disabled={!state.can_undo}
+          >
+            Undo
+          </button>
+          <button type="button" className="target-btn secondary" onClick={() => restMode()}>
+            Rest
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="banner warn" role="alert">
@@ -234,6 +266,13 @@ export function App() {
                 onClick={() => setTab("access")}
               >
                 Access
+              </button>
+              <button
+                type="button"
+                className={tab === "setup" ? "tab active" : "tab"}
+                onClick={() => setTab("setup")}
+              >
+                Setup
               </button>
             </nav>
           )}
@@ -388,10 +427,27 @@ export function App() {
                 onAcceptRecipe={() => acceptRecipeSuggestion()}
               />
             )}
-            {!simple && tab === "coaching" && <CoachingPanel />}
+            {!simple && tab === "coaching" && (
+              <>
+                <CoachingPanel />
+                <SignaturePanel />
+              </>
+            )}
             {!simple && tab === "access" && <A11yPanel />}
+            {!simple && tab === "setup" && <CaregiverChecklist />}
           </main>
         </>
+      )}
+
+      {state.pending_block_review && (
+        <BlockReviewModal
+          prompt={state.pending_block_review.prompt}
+          flowMinutes={state.pending_block_review.flow_minutes}
+          actions={state.pending_block_review.actions_count}
+          undos={state.pending_block_review.undos_count}
+          onSubmit={(p) => submitBlockReview(p)}
+          onSkip={() => submitBlockReview({ helpful_block: null, architect_helpful: null, skip: true })}
+        />
       )}
 
       {showWhy && (

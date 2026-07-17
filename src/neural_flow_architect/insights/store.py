@@ -31,6 +31,24 @@ class SelfReportLabel:
 
 
 @dataclass
+class BlockReview:
+    """End-of-block review: was this work block helpful?"""
+
+    helpful_block: bool | None = None  # None = skipped
+    architect_helpful: bool | None = None
+    note: str = ""
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "helpful_block": self.helpful_block,
+            "architect_helpful": self.architect_helpful,
+            "note": self.note,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
+
+@dataclass
 class SessionSummary:
     session_id: str
     started_at: datetime
@@ -42,6 +60,9 @@ class SessionSummary:
     peak_engagement: float = 0.0
     labels: list[SelfReportLabel] = field(default_factory=list)
     adapter: str = "unknown"
+    block_review: BlockReview | None = None
+    recipe: str = "study"
+    hour_started: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -55,6 +76,9 @@ class SessionSummary:
             "peak_engagement": self.peak_engagement,
             "labels": [lab.to_dict() for lab in self.labels],
             "adapter": self.adapter,
+            "recipe": self.recipe,
+            "hour_started": self.hour_started,
+            "block_review": self.block_review.to_dict() if self.block_review else None,
             "flow_minutes": sum(
                 v
                 for k, v in self.state_minutes.items()
@@ -75,11 +99,16 @@ class InsightsStore:
     def current(self) -> SessionSummary | None:
         return self._current
 
-    def start_session(self, adapter: str = "unknown") -> SessionSummary:
+    def start_session(
+        self, adapter: str = "unknown", *, recipe: str = "study"
+    ) -> SessionSummary:
+        now = datetime.utcnow()
         self._current = SessionSummary(
             session_id=str(uuid4()),
-            started_at=datetime.utcnow(),
+            started_at=now,
             adapter=adapter,
+            recipe=recipe,
+            hour_started=now.hour,
         )
         self._last_state = None
         self._last_ts = self._current.started_at
@@ -132,6 +161,30 @@ class InsightsStore:
         )
         self._current.labels.append(label)
         return label
+
+    def set_block_review(
+        self,
+        *,
+        helpful_block: bool | None,
+        architect_helpful: bool | None = None,
+        note: str = "",
+    ) -> BlockReview | None:
+        if self._current is None:
+            return None
+        review = BlockReview(
+            helpful_block=helpful_block,
+            architect_helpful=architect_helpful,
+            note=note,
+        )
+        self._current.block_review = review
+        return review
+
+    def save_current_if_any(self) -> None:
+        """Persist live session snapshot without ending it (for post-review updates)."""
+        if self._current is None:
+            return
+        path = self.directory / f"{self._current.session_id}.json"
+        path.write_text(json.dumps(self._current.to_dict(), indent=2), encoding="utf-8")
 
     def snapshot_current(self) -> dict[str, Any] | None:
         if self._current is None:
