@@ -45,6 +45,7 @@ def build_adapter(settings: Settings) -> BCIAdapter:
         return BrainFlowAdapter(
             board_id=settings.brainflow_board_id,
             serial_port=settings.brainflow_serial_port,
+            file_path=getattr(settings, "brainflow_file", "") or "",
         )
     if name == "replay":
         from neural_flow_architect.adapters.replay import ReplayAdapter

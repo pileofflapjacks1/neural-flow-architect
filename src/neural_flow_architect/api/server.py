@@ -88,6 +88,12 @@ class ImportBody(BaseModel):
     bundle: dict[str, Any]
 
 
+class FeedbackBody(BaseModel):
+    tool_id: str
+    rating: str = Field(description="helpful | unhelpful | never")
+    note: str = ""
+
+
 def create_app(
     settings: Settings | None = None,
     controller: SessionController | None = None,
@@ -151,11 +157,24 @@ def create_app(
 
     @app.post("/agent/pause")
     async def pause_agent(body: PauseBody) -> dict[str, Any]:
+        """Fail-safe override — always available."""
         return session.set_paused(body.paused)
+
+    @app.post("/agent/failsafe/clear")
+    async def clear_failsafe() -> dict[str, Any]:
+        return session.clear_failsafe()
+
+    @app.get("/agent/failsafe")
+    async def get_failsafe() -> dict[str, Any]:
+        return {"failsafe": session.failsafe.state.to_dict()}
 
     @app.post("/agent/undo")
     async def undo_agent() -> dict[str, Any]:
         return session.undo()
+
+    @app.post("/agent/feedback")
+    async def agent_feedback(body: FeedbackBody) -> dict[str, Any]:
+        return session.record_feedback(body.tool_id, body.rating, note=body.note)
 
     @app.post("/agent/rest")
     async def rest_mode() -> dict[str, Any]:

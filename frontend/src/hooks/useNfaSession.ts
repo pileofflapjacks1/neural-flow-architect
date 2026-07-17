@@ -58,6 +58,12 @@ export type NfaState = {
     uptime_sec?: number;
     heartbeat_ok?: boolean;
   };
+  failsafe?: {
+    active?: boolean;
+    reason?: string;
+    message?: string;
+  };
+  recent_actions?: Array<{ tool_id?: string; explanation?: string }>;
   preferences?: Record<string, unknown>;
   context?: Record<string, unknown>;
   ts?: string;
@@ -248,6 +254,29 @@ export function useNfaSession() {
     }
   }, []);
 
+  const feedback = useCallback(
+    async (tool_id: string, rating: "helpful" | "unhelpful" | "never") => {
+      try {
+        const res = await post("/agent/feedback", { tool_id, rating });
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+        return res;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "feedback failed");
+        return null;
+      }
+    },
+    []
+  );
+
+  const clearFailsafe = useCallback(async () => {
+    try {
+      const res = await post("/agent/failsafe/clear");
+      if (res.state) setState((s) => ({ ...s, ...res.state }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "clear failsafe failed");
+    }
+  }, []);
+
   return {
     state,
     connected,
@@ -263,6 +292,8 @@ export function useNfaSession() {
     setRecipe,
     setPredictive,
     setSimpleMode,
+    feedback,
+    clearFailsafe,
     refresh,
   };
 }

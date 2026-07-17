@@ -40,8 +40,10 @@ Check items as they ship. Prefer small, reviewable PRs.
 ## Phase 1 — MVP usable with open tools
 
 ### Signal & flow
-- [~] BrainFlow adapter skeleton (live); file-style path via **replay** fixture
+- [x] BrainFlow adapter: live + synthetic board + CSV/NPY file mode + reconnect
 - [x] Replay adapter + synthetic trajectory fixture
+- [x] Fail-safe override (stall / quality / errors / user pause)
+- [x] Action feedback (helpful / unhelpful / never) + affinity scoring
 - [x] Quality metrics (clip/flat/noise/dropout heuristics + overall score)
 - [x] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
 - [x] Optional connectivity feature flag (`include_connectivity`)

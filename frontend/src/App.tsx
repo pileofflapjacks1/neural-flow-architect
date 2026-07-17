@@ -44,6 +44,8 @@ export function App() {
     setRecipe,
     setPredictive,
     setSimpleMode,
+    feedback,
+    clearFailsafe,
     refresh,
   } = useNfaSession();
   const [showWhy, setShowWhy] = useState(false);
@@ -128,6 +130,30 @@ export function App() {
         <div className="banner warn" role="alert">
           {error}
           <p className="meta-line">Tip: run <code>nfa start</code> in a terminal.</p>
+        </div>
+      )}
+
+      {state.failsafe?.active && (
+        <div className="banner warn" role="alert">
+          <strong>Fail-safe:</strong> {state.failsafe.message || state.failsafe.reason}
+          <div className="action-row" style={{ marginTop: "0.5rem" }}>
+            <button
+              type="button"
+              className="target-btn override"
+              onClick={() => setPaused(true)}
+            >
+              Pause now
+            </button>
+            {state.failsafe.reason !== "user_pause" && (
+              <button
+                type="button"
+                className="target-btn secondary"
+                onClick={() => clearFailsafe()}
+              >
+                Clear fail-safe
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -345,9 +371,28 @@ export function App() {
           because={because}
           toolId={state.explanation?.action}
           onClose={() => setShowWhy(false)}
+          onHelpful={
+            state.explanation?.action
+              ? () => {
+                  feedback(state.explanation!.action, "helpful");
+                  setShowWhy(false);
+                }
+              : undefined
+          }
+          onUnhelpful={
+            state.explanation?.action
+              ? () => {
+                  feedback(state.explanation!.action, "unhelpful");
+                  setShowWhy(false);
+                }
+              : undefined
+          }
           onNever={
             state.explanation?.action
-              ? () => toolPref(state.explanation!.action, "never")
+              ? () => {
+                  feedback(state.explanation!.action, "never");
+                  setShowWhy(false);
+                }
               : undefined
           }
           onAlways={

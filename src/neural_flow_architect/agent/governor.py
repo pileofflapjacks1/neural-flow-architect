@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import time
 from collections import deque
+from collections.abc import Callable
+from typing import Any
 
 from neural_flow_architect.core.types import ActionProposal, ImpactLevel, WorldSnapshot
 
@@ -13,12 +15,18 @@ class Governor:
         self,
         max_medium_per_10_min: int = 6,
         tool_cooldown_sec: float = 45.0,
+        *,
+        score_bonus_fn: Callable[[str], float] | None = None,
+        failsafe_allow_fn: Callable[[str, str], bool] | None = None,
     ) -> None:
         self.max_medium_per_10_min = max_medium_per_10_min
         self.tool_cooldown_sec = tool_cooldown_sec
         self._recent_medium: deque[float] = deque()
         self._last_tool_ts: dict[str, float] = {}
         self._active_tools: set[str] = set()
+        self._extra_cooldown: dict[str, float] = {}  # tool_id -> extra seconds
+        self.score_bonus_fn = score_bonus_fn
+        self.failsafe_allow_fn = failsafe_allow_fn
 
     def filter(
         self, proposals: list[ActionProposal], snapshot: WorldSnapshot
@@ -28,9 +36,19 @@ class Governor:
         allowed: list[ActionProposal] = []
         prefs = snapshot.preferences
 
-        for prop in proposals:
+        # Apply preference affinity to proposal scores
+        ranked = list(proposals)
+        if self.score_bonus_fn is not None:
+            for prop in ranked:
+                prop.score = prop.score + self.score_bonus_fn(prop.tool_id)
+            ranked = sorted(ranked, key=lambda p: p.score, reverse=True)
+
+        for prop in ranked:
             if prop.tool_id in prefs.denied_tools:
                 continue
+            if self.failsafe_allow_fn is not None:
+                if not self.failsafe_allow_fn(prop.tool_id, prop.impact.value):
+                    continue
             if prop.tool_id in self._active_tools and prop.tool_id not in {
                 "notify.allow_all",
                 "focus.disable",
@@ -47,9 +65,9 @@ class Governor:
                 }:
                     continue
 
-
             last = self._last_tool_ts.get(prop.tool_id)
-            if last is not None and (now - last) < self.tool_cooldown_sec:
+            cooldown = self.tool_cooldown_sec + self._extra_cooldown.get(prop.tool_id, 0.0)
+            if last is not None and (now - last) < cooldown:
                 continue
             if prop.impact in {ImpactLevel.MEDIUM, ImpactLevel.HIGH}:
                 if len(self._recent_medium) >= self.max_medium_per_10_min:
@@ -61,6 +79,11 @@ class Governor:
                 continue
             allowed.append(prop)
         return allowed
+
+    def penalize_cooldown(self, tool_id: str, extra_sec: float = 90.0) -> None:
+        self._extra_cooldown[tool_id] = max(
+            self._extra_cooldown.get(tool_id, 0.0), extra_sec
+        )
 
     def record(self, tool_id: str, impact: ImpactLevel) -> None:
         now = time.time()

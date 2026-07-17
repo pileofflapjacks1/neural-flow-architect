@@ -5,6 +5,8 @@ type Props = {
   onClose: () => void;
   onNever?: () => void;
   onAlways?: () => void;
+  onHelpful?: () => void;
+  onUnhelpful?: () => void;
 };
 
 export function ExplainDrawer({
@@ -14,6 +16,8 @@ export function ExplainDrawer({
   onClose,
   onNever,
   onAlways,
+  onHelpful,
+  onUnhelpful,
 }: Props) {
   return (
     <div className="drawer-backdrop" role="presentation" onClick={onClose}>
@@ -37,10 +41,16 @@ export function ExplainDrawer({
             ))}
           </ul>
         )}
+        <p className="meta-line">Was this helpful?</p>
         <div className="action-row">
-          {onAlways && (
-            <button type="button" className="target-btn secondary" onClick={onAlways}>
-              Allow always
+          {onHelpful && (
+            <button type="button" className="target-btn" onClick={onHelpful}>
+              Helpful
+            </button>
+          )}
+          {onUnhelpful && (
+            <button type="button" className="target-btn secondary" onClick={onUnhelpful}>
+              Not helpful
             </button>
           )}
           {onNever && (
@@ -48,7 +58,12 @@ export function ExplainDrawer({
               Never
             </button>
           )}
-          <button type="button" className="target-btn" onClick={onClose}>
+          {onAlways && (
+            <button type="button" className="target-btn secondary" onClick={onAlways}>
+              Allow always
+            </button>
+          )}
+          <button type="button" className="target-btn secondary" onClick={onClose}>
             Close
           </button>
         </div>

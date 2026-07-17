@@ -9,6 +9,7 @@ from typing import Any
 
 from neural_flow_architect.agent.undo import UndoStack
 from neural_flow_architect.core.context import enrich_context
+from neural_flow_architect.core.failsafe import FailSafeGuard, FailSafeReason
 from neural_flow_architect.core.intents import IntentRouter
 from neural_flow_architect.core.onboarding import OnboardingState
 from neural_flow_architect.core.runtime import NeuralFlowRuntime, RuntimeTick
@@ -22,6 +23,7 @@ from neural_flow_architect.core.types import (
 )
 from neural_flow_architect.environment.recipes import apply_recipe, list_recipes
 from neural_flow_architect.insights.coaching import build_coaching_notes
+from neural_flow_architect.personalization.feedback import FeedbackStore
 from neural_flow_architect.personalization.learning import (
     learn_from_session_summary,
     update_thresholds_from_label,
@@ -53,6 +55,12 @@ class SessionController:
             self.settings.data_dir / "profiles" / "onboarding.json"
         )
         self.intent_router = IntentRouter(self, min_confidence=0.5)
+        self.failsafe = FailSafeGuard(
+            stall_sec=self.settings.failsafe_stall_sec,
+            low_quality_threshold=self.settings.failsafe_low_quality,
+            low_quality_streak=self.settings.failsafe_quality_streak,
+        )
+        self.feedback = FeedbackStore()
         self.runtime = self._new_runtime()
         self._task: asyncio.Task[list[RuntimeTick]] | None = None
         self._listeners: list[asyncio.Queue[dict[str, Any]]] = []
@@ -70,6 +78,8 @@ class SessionController:
             preferences_provider=self.preferences_for_runtime,
             context_provider=self.context_for_runtime,
             intent_handler=self._on_intent_event,
+            failsafe=self.failsafe,
+            score_bonus_fn=self.feedback.score_bonus,
         )
         rt.flow.protect_t = self.profile.protect_engagement_threshold
         rt.flow.deep_t = self.profile.deep_flow_engagement_threshold
@@ -154,6 +164,9 @@ class SessionController:
                 "uptime_sec": 0.0,
                 "heartbeat_ok": True,
             },
+            "failsafe": self.failsafe.state.to_dict(),
+            "recent_actions": [],
+            "feedback": self.feedback.as_dict(),
             "shortcuts": [],
             "help": {
                 "user_guide": "docs/ux/USER_GUIDE.md",
@@ -230,6 +243,8 @@ class SessionController:
             self._tick_count = 0
             self._session_started_at = datetime.utcnow()
             self._last_checkpoint_at = self._session_started_at
+            if not self.profile.preferences.agent_paused:
+                self.failsafe.clear(reason_ok="session_start")
             self._task = asyncio.create_task(
                 self.runtime.run(duration_sec=duration_sec, on_tick=on_tick),
                 name="nfa-session-loop",
@@ -368,11 +383,15 @@ class SessionController:
             "session_health": {
                 "tick_count": self._tick_count,
                 "uptime_sec": round(uptime, 1),
-                "heartbeat_ok": True,
+                "heartbeat_ok": not self.failsafe.state.active
+                or self.failsafe.state.reason == FailSafeReason.USER_PAUSE,
                 "last_checkpoint": self._last_checkpoint_at.isoformat()
                 if self._last_checkpoint_at
                 else None,
             },
+            "failsafe": tick.failsafe or self.failsafe.state.to_dict(),
+            "recent_actions": list(self.runtime.architect.last_actions[-5:]),
+            "feedback": self.feedback.as_dict(),
             "shortcuts": keymap_for_ui(),
             "help": self._idle_state()["help"],
             "ts": now.isoformat(),
@@ -580,26 +599,98 @@ class SessionController:
         return {"ok": True, "predictive_enabled": enabled, "state": state}
 
     def set_paused(self, paused: bool) -> dict[str, Any]:
+        """Fail-safe override — always works, even when the agent is degraded."""
         self.profile.preferences.agent_paused = paused
         self.profile.save(self.settings.data_dir / "profiles")
+        self.failsafe.note_user_pause(paused)
+        # Kill physical actuators immediately on pause
+        if paused:
+            self.runtime.physical.enabled = False
+            self.runtime.architect.force_idle = True
+        else:
+            self.runtime.physical.enabled = self.settings.iot_enabled
+            if self.failsafe.state.reason in {
+                FailSafeReason.NONE,
+                FailSafeReason.USER_PAUSE,
+            }:
+                self.runtime.architect.force_idle = False
         state = self.get_state()
         state["agent_paused"] = paused
         state["preferences"] = self.profile.preferences.model_dump()
+        state["failsafe"] = self.failsafe.state.to_dict()
         if paused:
             state["mode"] = AgentMode.IDLE.value
+            state["signal"] = state.get("signal") or "good"
         self._publish(state)
-        return {"ok": True, "agent_paused": paused, "state": state}
+        return {
+            "ok": True,
+            "agent_paused": paused,
+            "failsafe": self.failsafe.state.to_dict(),
+            "state": state,
+        }
+
+    def clear_failsafe(self) -> dict[str, Any]:
+        """Manual clear after signal recovery (does not un-pause user pause)."""
+        if self.profile.preferences.agent_paused:
+            return {
+                "ok": False,
+                "message": "Architect is user-paused — Resume first",
+                "failsafe": self.failsafe.state.to_dict(),
+            }
+        self.failsafe.clear(reason_ok="manual_clear")
+        self.runtime.architect.force_idle = False
+        self.runtime.physical.enabled = self.settings.iot_enabled
+        state = self.get_state()
+        state["failsafe"] = self.failsafe.state.to_dict()
+        self._publish(state)
+        return {"ok": True, "failsafe": state["failsafe"], "state": state}
 
     def undo(self) -> dict[str, Any]:
+        # Capture tool before undo for feedback learning
+        peek = self.undo_stack.peek()
         result = self.runtime.architect.undo_last()
         if result.success:
             self.runtime.insights.observe_undo()
+            if peek is not None:
+                self.record_feedback(peek.tool_id, "unhelpful", note="auto:undo")
         state = self.get_state()
         state["can_undo"] = self.undo_stack.can_undo
         state["digital"] = self.runtime.digital.snapshot()
         state["last_undo"] = result.model_dump(mode="json")
         self._publish(state)
         return {"ok": result.success, "result": result.model_dump(mode="json"), "state": state}
+
+    def record_feedback(
+        self,
+        tool_id: str,
+        rating: str,
+        *,
+        note: str = "",
+    ) -> dict[str, Any]:
+        if rating not in {"helpful", "unhelpful", "never"}:
+            return {"ok": False, "message": "rating must be helpful|unhelpful|never"}
+        flow = self._latest.get("flow") or {}
+        mode = str(self._latest.get("mode") or "")
+        out = self.feedback.record(
+            tool_id,
+            rating,  # type: ignore[arg-type]
+            note=note,
+            mode=mode,
+            engagement=float(flow.get("engagement") or 0.0),
+            denied_tools=list(self.profile.preferences.denied_tools),
+            granted_tools=list(self.profile.preferences.granted_tools),
+        )
+        self.profile.preferences.denied_tools = out["denied_tools"]
+        self.profile.preferences.granted_tools = out["granted_tools"]
+        if rating == "unhelpful":
+            self.runtime.architect.governor.penalize_cooldown(tool_id, 120.0)
+        self.profile.save(self.settings.data_dir / "profiles")
+        state = self.get_state()
+        state["preferences"] = self.profile.preferences.model_dump()
+        state["feedback"] = self.feedback.as_dict()
+        state["last_feedback"] = out
+        self._publish(state)
+        return {"ok": True, **out, "state": state}
 
     def set_tool_preference(self, tool_id: str, action: str) -> dict[str, Any]:
         prefs = self.profile.preferences

@@ -36,8 +36,14 @@ class Settings(BaseSettings):
     replay_path: str = ""
     replay_loop: bool = True
 
-    brainflow_board_id: int = -1
+    brainflow_board_id: int = -1  # -1 = synthetic board (no hardware)
     brainflow_serial_port: str = ""
+    brainflow_file: str = ""  # optional CSV/NPY file replay via brainflow adapter
+
+    # Fail-safe
+    failsafe_stall_sec: float = 3.0
+    failsafe_low_quality: float = 0.35
+    failsafe_quality_streak: int = 8
 
     agent_mode: Literal["rules", "llm_local", "llm_cloud"] = "rules"
     explain_actions: bool = True

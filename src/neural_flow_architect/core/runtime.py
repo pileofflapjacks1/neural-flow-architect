@@ -13,6 +13,7 @@ from neural_flow_architect.agent.architect import Architect, ArchitectDecision
 from neural_flow_architect.agent.llm_explainer import LocalLLMExplainer
 from neural_flow_architect.agent.undo import UndoStack
 from neural_flow_architect.core.context import enrich_context
+from neural_flow_architect.core.failsafe import FailSafeGuard
 from neural_flow_architect.core.settings import Settings, get_settings
 from neural_flow_architect.core.types import (
     AgentMode,
@@ -38,6 +39,7 @@ class RuntimeTick:
     digital: dict[str, object] = field(default_factory=dict)
     quality_overall: float = 1.0
     precursors: list[dict] = field(default_factory=list)
+    failsafe: dict = field(default_factory=dict)
 
 
 OnTick = Callable[[RuntimeTick], None]
@@ -55,6 +57,8 @@ class NeuralFlowRuntime:
         preferences_provider: Callable[[], UserPreferences] | None = None,
         context_provider: Callable[[], ContextSnapshot] | None = None,
         intent_handler: Callable[[IntentEvent], None] | None = None,
+        failsafe: FailSafeGuard | None = None,
+        score_bonus_fn: Callable[[str], float] | None = None,
     ) -> None:
         self.settings = settings or get_settings()
         self.settings.ensure_data_dirs()
@@ -81,6 +85,11 @@ class NeuralFlowRuntime:
             announce=self.settings.os_notifications_announce,
         )
         self.undo_stack = undo_stack or UndoStack()
+        self.failsafe = failsafe or FailSafeGuard(
+            stall_sec=self.settings.failsafe_stall_sec,
+            low_quality_threshold=self.settings.failsafe_low_quality,
+            low_quality_streak=self.settings.failsafe_quality_streak,
+        )
         llm = None
         if self.settings.llm_enabled or self.settings.agent_mode == "llm_local":
             llm = LocalLLMExplainer(
@@ -100,6 +109,9 @@ class NeuralFlowRuntime:
             predictive_enabled=self.settings.predictive_enabled,
             llm=llm,
             notifications=self.notifications,
+            score_bonus_fn=score_bonus_fn,
+            failsafe_allow_fn=lambda tid, imp: self.failsafe.allow_tool(tid, impact=imp),
+            on_agent_error=self.failsafe.note_agent_error,
         )
         self.architect.precursors.min_confidence = self.settings.predictive_min_confidence
         self.insights = InsightsStore(self.settings.data_dir / "sessions")
@@ -108,6 +120,7 @@ class NeuralFlowRuntime:
         self.intent_handler = intent_handler
         self._running = False
         self._intent_task: asyncio.Task[None] | None = None
+        self._watchdog_task: asyncio.Task[None] | None = None
         self.last_flow: FlowEstimate | None = None
         self.last_decision: ArchitectDecision | None = None
         self.last_quality_overall: float = 1.0
@@ -141,6 +154,9 @@ class NeuralFlowRuntime:
             self._intent_task = asyncio.create_task(
                 self._consume_intents(intent_iter), name="nfa-intents"
             )
+        self._watchdog_task = asyncio.create_task(
+            self._watchdog_loop(), name="nfa-failsafe-watchdog"
+        )
 
         try:
             async for frame in self.adapter.stream():
@@ -149,11 +165,29 @@ class NeuralFlowRuntime:
                 if duration_sec is not None and (loop.time() - started) >= duration_sec:
                     break
 
+                # Fail-safe quality tracking on every frame
+                self.failsafe.note_frame(
+                    frame.quality.overall, dropout=frame.quality.dropout
+                )
+                # Hard-disable IoT while fail-safe
+                if self.failsafe.blocks_proactive:
+                    self.physical.enabled = False
+                    self.architect.force_idle = (
+                        self.failsafe.state.reason.value
+                        in {"stream_stall", "agent_error"}
+                    )
+                else:
+                    self.physical.enabled = self.settings.iot_enabled
+                    self.architect.force_idle = False
+
                 for window in self.features.push(frame):
                     estimate = self.flow.update(window)
                     self.last_flow = estimate
                     self.last_quality_overall = window.quality.overall
                     self.insights.observe_flow(estimate)
+                    self.failsafe.note_frame(
+                        window.quality.overall, dropout=window.quality.dropout
+                    )
                     decision = await self._maybe_act(estimate, window.quality)
                     self.last_decision = decision
                     tick = RuntimeTick(
@@ -162,24 +196,44 @@ class NeuralFlowRuntime:
                         digital=self.digital.snapshot(),
                         quality_overall=window.quality.overall,
                         precursors=list(decision.precursors),
+                        failsafe=self.failsafe.state.to_dict(),
                     )
                     ticks.append(tick)
                     if on_tick is not None:
                         on_tick(tick)
+        except Exception as exc:
+            self.failsafe.note_agent_error(exc)
+            raise
         finally:
             self._running = False
-            if self._intent_task is not None:
-                self._intent_task.cancel()
-                try:
-                    await self._intent_task
-                except asyncio.CancelledError:
-                    pass
-                self._intent_task = None
-            await self.adapter.disconnect()
+            for task in (self._intent_task, self._watchdog_task):
+                if task is not None:
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        pass
+            self._intent_task = None
+            self._watchdog_task = None
+            # Fail-safe: always disconnect cleanly
+            try:
+                await self.adapter.disconnect()
+            except Exception:
+                pass
             persist = self.consent.allows(ConsentScope.PERSIST_FEATURES)
             self.insights.end_session(persist=persist)
 
         return ticks
+
+    async def _watchdog_loop(self) -> None:
+        try:
+            while self._running:
+                self.failsafe.note_heartbeat()
+                if self.failsafe.blocks_proactive:
+                    self.physical.enabled = False
+                await asyncio.sleep(0.5)
+        except asyncio.CancelledError:
+            raise
 
     async def _consume_intents(self, intent_iter: AsyncIterator[IntentEvent]) -> None:
         try:

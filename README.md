@@ -187,9 +187,18 @@ nfa demo --duration 30              # CLI closed loop
 nfa demo --adapter replay --duration 30
 nfa serve --adapter simulator       # API only
 nfa serve --adapter neuralink_stub  # high-channel + intent practice
+
+# BrainFlow (optional hardware / synthetic / file)
+pip install -e ".[brainflow]"
+NFA_ADAPTER=brainflow NFA_BRAINFLOW_BOARD_ID=-1 nfa serve
+NFA_ADAPTER=brainflow NFA_BRAINFLOW_FILE=tests/fixtures/synthetic_eeg.csv nfa serve
+
 nfa eval --duration 20 --recipe study
 nfa bench --channels 8 --iterations 40
 ```
+
+**Fail-safe:** Pause always works; low quality / stream stall blocks proactive IoT.  
+**Feedback:** In Why?, tap Helpful / Not helpful / Never — the co-pilot learns locally.
 
 Optional BrainFlow hardware path:
 
