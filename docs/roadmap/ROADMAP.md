@@ -68,19 +68,25 @@ timeline
 
 **Build**
 
-- Preference learning from accept/undo  
-- Longitudinal insights dashboard  
-- Home Assistant integration (explicit enable)  
-- Context: time, optional active application  
-- Modular multi-agent policies  
-- Optional local LLM for explanation wording / planning (summaries only)  
-- Evaluation harness for offline policy replay  
+- [x] Preference learning from accept/undo + self-report threshold nudges  
+- [x] Longitudinal insights + gentle coaching notes  
+- [x] Home Assistant optional REST path (explicit enable, soft-fail)  
+- [x] Context: time-of-day, recipe, optional active_app / user_goal  
+- [x] Modular multi-agent policies (Protector / ReEntry / Transition)  
+- [x] Optional local LLM for explanation wording (summaries only; planning later)  
+- [x] Evaluation harness for offline policy replay (`nfa eval`)  
+- [x] Environment recipes: study / create / rest / social  
+- [x] Signal quality gates  
+- [x] Predictive precursors (opt-in)  
+- [x] OS notification hooks (best-effort)  
 
 **Exit criteria**
 
 - Users can complete a week of sessions with improving personalization metrics  
 - IoT actions safe under dry-run and rate limits  
 - Undo rate trending down for default protect tools  
+
+**Status:** Phase 2 complete for open-source foundation (July 2026). Remaining polish: full LLM tool-calling planner, OS Focus Mode deep integration, richer BrainFlow live validation.  
 
 ---
 

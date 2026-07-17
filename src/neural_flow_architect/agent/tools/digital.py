@@ -7,11 +7,20 @@ from uuid import uuid4
 
 from neural_flow_architect.core.types import ActionResult, ImpactLevel, WorldSnapshot
 from neural_flow_architect.environment.digital import DigitalOrchestrator
+from neural_flow_architect.environment.os_notifications import (
+    NotificationBackend,
+    NullNotificationBackend,
+)
 
 
 class _BaseDigitalTool:
-    def __init__(self, orchestrator: DigitalOrchestrator) -> None:
+    def __init__(
+        self,
+        orchestrator: DigitalOrchestrator,
+        notifications: NotificationBackend | None = None,
+    ) -> None:
         self.orch = orchestrator
+        self.notifications = notifications or NullNotificationBackend()
 
 
 class SetUIDensityTool(_BaseDigitalTool):
@@ -55,10 +64,11 @@ class SuppressNotificationsTool(_BaseDigitalTool):
                 dry_run=True,
             )
         self.orch.suppress_noncritical(True)
+        os_result = self.notifications.suppress_noncritical()
         return ActionResult(
             tool_id=self.id,
             success=True,
-            message="Non-critical notifications suppressed",
+            message=f"Non-critical notifications suppressed ({os_result.get('backend')})",
             undo_token=str(uuid4()),
         )
 
@@ -79,6 +89,7 @@ class AllowNotificationsTool(_BaseDigitalTool):
                 dry_run=True,
             )
         self.orch.suppress_noncritical(False)
+        self.notifications.restore()
         return ActionResult(
             tool_id=self.id,
             success=True,
@@ -135,12 +146,16 @@ class DisableFocusTool(_BaseDigitalTool):
         )
 
 
-def register_digital_tools(registry: Any, orchestrator: DigitalOrchestrator) -> None:
+def register_digital_tools(
+    registry: Any,
+    orchestrator: DigitalOrchestrator,
+    notifications: NotificationBackend | None = None,
+) -> None:
     for tool in (
-        SetUIDensityTool(orchestrator),
-        SuppressNotificationsTool(orchestrator),
-        AllowNotificationsTool(orchestrator),
-        EnableFocusTool(orchestrator),
-        DisableFocusTool(orchestrator),
+        SetUIDensityTool(orchestrator, notifications),
+        SuppressNotificationsTool(orchestrator, notifications),
+        AllowNotificationsTool(orchestrator, notifications),
+        EnableFocusTool(orchestrator, notifications),
+        DisableFocusTool(orchestrator, notifications),
     ):
         registry.register(tool)

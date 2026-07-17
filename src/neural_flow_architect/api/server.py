@@ -1,0 +1,228 @@
+"""Local-first REST + WebSocket API for the companion UI."""
+
+from __future__ import annotations
+
+import asyncio
+from contextlib import asynccontextmanager
+from typing import Any
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+
+from neural_flow_architect import __version__
+from neural_flow_architect.core.session import SessionController
+from neural_flow_architect.core.settings import Settings, get_settings
+
+
+class PauseBody(BaseModel):
+    paused: bool = True
+
+
+class ToolPrefBody(BaseModel):
+    tool_id: str
+    action: str = Field(description="never | always | clear")
+
+
+class LabelBody(BaseModel):
+    felt_in_flow: bool
+    note: str = ""
+
+
+class StartBody(BaseModel):
+    duration_sec: float | None = None
+    adapter: str | None = None
+
+
+class RecipeBody(BaseModel):
+    recipe: str = "study"
+
+
+class ContextBody(BaseModel):
+    active_app: str | None = None
+    user_goal: str | None = None
+
+
+class PredictiveBody(BaseModel):
+    enabled: bool = True
+
+
+def create_app(
+    settings: Settings | None = None,
+    controller: SessionController | None = None,
+) -> FastAPI:
+    settings = settings or get_settings()
+    session = controller or SessionController(settings)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
+        app.state.session = session
+        app.state.settings = settings
+        yield
+        if session.is_running:
+            await session.stop()
+
+    app = FastAPI(
+        title="Neural Flow Architect",
+        version=__version__,
+        description="Local-only companion API. Not a medical device.",
+        lifespan=lifespan,
+    )
+
+    # Localhost companion UI (Vite default)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+            "http://127.0.0.1:4173",
+            "http://localhost:4173",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/health")
+    async def health() -> dict[str, Any]:
+        return {
+            "ok": True,
+            "version": __version__,
+            "local_only": settings.local_only,
+            "disclaimer": "Research / assistive software — not a medical device",
+        }
+
+    @app.get("/state")
+    async def get_state() -> dict[str, Any]:
+        return session.get_state()
+
+    @app.post("/session/start")
+    async def start_session(body: StartBody | None = None) -> dict[str, Any]:
+        body = body or StartBody()
+        if body.adapter:
+            settings.adapter = body.adapter  # type: ignore[assignment]
+            session.settings.adapter = body.adapter  # type: ignore[assignment]
+        return await session.start(duration_sec=body.duration_sec)
+
+    @app.post("/session/stop")
+    async def stop_session() -> dict[str, Any]:
+        return await session.stop()
+
+    @app.post("/agent/pause")
+    async def pause_agent(body: PauseBody) -> dict[str, Any]:
+        return session.set_paused(body.paused)
+
+    @app.post("/agent/undo")
+    async def undo_agent() -> dict[str, Any]:
+        return session.undo()
+
+    @app.post("/agent/rest")
+    async def rest_mode() -> dict[str, Any]:
+        return session.rest_mode()
+
+    @app.post("/prefs/tool")
+    async def tool_pref(body: ToolPrefBody) -> dict[str, Any]:
+        return session.set_tool_preference(body.tool_id, body.action)
+
+    @app.post("/session/label")
+    async def label_session(body: LabelBody) -> dict[str, Any]:
+        return session.label_flow(body.felt_in_flow, body.note)
+
+    @app.get("/sessions")
+    async def list_sessions() -> dict[str, Any]:
+        return {"sessions": session.list_sessions()}
+
+    @app.get("/session/export")
+    async def export_session() -> dict[str, Any]:
+        return session.export_current()
+
+    @app.get("/recipes")
+    async def recipes() -> dict[str, Any]:
+        from neural_flow_architect.environment.recipes import list_recipes
+
+        return {"recipes": list_recipes()}
+
+    @app.post("/recipe")
+    async def set_recipe(body: RecipeBody) -> dict[str, Any]:
+        return session.set_recipe(body.recipe)
+
+    @app.post("/context")
+    async def set_context(body: ContextBody) -> dict[str, Any]:
+        return session.set_context(active_app=body.active_app, user_goal=body.user_goal)
+
+    @app.get("/coaching")
+    async def coaching() -> dict[str, Any]:
+        return session.coaching()
+
+    @app.get("/profile")
+    async def profile() -> dict[str, Any]:
+        return {
+            "preferences": session.profile.preferences.model_dump(),
+            "thresholds": {
+                "protect": session.profile.protect_engagement_threshold,
+                "deep": session.profile.deep_flow_engagement_threshold,
+            },
+            "recipe": session._recipe,
+            "predictive_enabled": settings.predictive_enabled,
+            "llm_enabled": settings.llm_enabled or settings.agent_mode == "llm_local",
+        }
+
+    @app.post("/agent/predictive")
+    async def set_predictive(body: PredictiveBody) -> dict[str, Any]:
+        return session.set_predictive(body.enabled)
+
+    @app.get("/features")
+    async def feature_flags() -> dict[str, Any]:
+        return {
+            "predictive_enabled": settings.predictive_enabled,
+            "llm_enabled": settings.llm_enabled or settings.agent_mode == "llm_local",
+            "os_notifications": settings.os_notifications,
+            "iot_enabled": settings.iot_enabled,
+            "local_only": settings.local_only,
+            "allow_cloud_llm": settings.allow_cloud_llm,
+        }
+
+    @app.websocket("/ws/state")
+    async def ws_state(ws: WebSocket) -> None:
+        await ws.accept()
+        queue = session.subscribe()
+        try:
+            while True:
+                # Also accept client pings / commands lightly
+                get_state_task = asyncio.create_task(queue.get())
+                recv_task = asyncio.create_task(ws.receive_text())
+                done, pending = await asyncio.wait(
+                    {get_state_task, recv_task},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                for t in pending:
+                    t.cancel()
+                if get_state_task in done:
+                    state = get_state_task.result()
+                    await ws.send_json(state)
+                if recv_task in done:
+                    try:
+                        msg = recv_task.result()
+                    except Exception:
+                        break
+                    if msg in {"ping", "hello"}:
+                        await ws.send_json({"type": "pong", "state": session.get_state()})
+        except WebSocketDisconnect:
+            pass
+        finally:
+            session.unsubscribe(queue)
+
+    return app
+
+
+def run_server(settings: Settings | None = None) -> None:
+    import uvicorn
+
+    settings = settings or get_settings()
+    app = create_app(settings)
+    uvicorn.run(
+        app,
+        host=settings.api_host,
+        port=settings.api_port,
+        log_level=settings.log_level.lower(),
+    )

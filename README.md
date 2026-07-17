@@ -165,8 +165,30 @@ pip install -e ".[dev]"
 # Run the simulator-based closed loop (no hardware required)
 nfa demo --duration 30
 
+# Replay a synthetic engagement trajectory fixture
+nfa demo --adapter replay --duration 30
+
+# Local companion API (REST + WebSocket on 127.0.0.1:8741)
+nfa serve --adapter simulator
+
+# Offline policy evaluation (no server needed)
+nfa eval --duration 20 --recipe study
+
+# Latency / high-channel stress vs documented budgets
+nfa bench --channels 8 --iterations 40
+nfa bench --channels 1024 --iterations 20
+
 # Or as a module
 python -m neural_flow_architect.cli demo --duration 30
+```
+
+Companion UI (separate terminal):
+
+```bash
+cd frontend
+npm install
+npm run dev
+# open http://127.0.0.1:5173 — Start simulator, Pause, Undo, label flow
 ```
 
 Optional BrainFlow hardware path:

@@ -1,0 +1,18 @@
+{
+  "description": "Synthetic engagement trajectory for demos and tests. Not human neural data.",
+  "sample_rate_hz": 250,
+  "n_channels": 8,
+  "trajectory": [
+    {"t": 0.0, "engagement": 0.20},
+    {"t": 5.0, "engagement": 0.32},
+    {"t": 12.0, "engagement": 0.50},
+    {"t": 20.0, "engagement": 0.68},
+    {"t": 30.0, "engagement": 0.84},
+    {"t": 40.0, "engagement": 0.90},
+    {"t": 50.0, "engagement": 0.60},
+    {"t": 58.0, "engagement": 0.35},
+    {"t": 70.0, "engagement": 0.55},
+    {"t": 80.0, "engagement": 0.78},
+    {"t": 90.0, "engagement": 0.28}
+  ]
+}

@@ -37,8 +37,17 @@ class Governor:
                 "ui.set_density",
             }:
                 # Avoid re-firing sticky protect tools every tick
-                if prop.tool_id in {"notify.suppress_noncritical", "focus.enable"}:
+                if prop.tool_id in {
+                    "notify.suppress_noncritical",
+                    "focus.enable",
+                    "recipe.apply",
+                    "iot.lights.dim_for_focus",
+                    "prepare.context",
+                    "tasks.queue_next",
+                }:
                     continue
+
+
             last = self._last_tool_ts.get(prop.tool_id)
             if last is not None and (now - last) < self.tool_cooldown_sec:
                 continue

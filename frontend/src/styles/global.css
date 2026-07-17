@@ -238,9 +238,122 @@ body {
   text-align: center;
 }
 
-.dim {
+.dim,
+.meta-line {
   color: var(--muted);
+  font-size: 0.9rem;
 }
+
+.banner.warn {
+  background: #3a3018;
+  border: 1px solid var(--warn);
+  color: var(--text);
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tab {
+  min-height: 48px;
+  min-width: 96px;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #4a5670;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab.active {
+  border-color: var(--accent);
+  background: #243049;
+}
+
+.insights {
+  width: min(560px, 100%);
+  text-align: left;
+}
+
+.insights h2,
+.insights h3 {
+  margin-bottom: 0.5rem;
+}
+
+.insight-stats,
+.exp-list {
+  padding-left: 1.2rem;
+}
+
+.target-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.label-row {
+  margin-top: 0.75rem;
+}
+
+.session-controls {
+  margin-bottom: 0.5rem;
+}
+
+.recipe-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.target-btn.recipe {
+  min-height: 52px;
+  min-width: 88px;
+  font-size: 0.95rem;
+}
+
+.target-btn.recipe.active {
+  border-color: var(--good);
+  background: #163528;
+}
+
+.banner.info {
+  background: #163028;
+  border: 1px solid var(--good);
+  color: var(--text);
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+}
+
+.coaching {
+  width: min(560px, 100%);
+  text-align: left;
+}
+
+.coaching-list {
+  list-style: none;
+  padding: 0;
+}
+
+.coaching-list li {
+  background: #141a28;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #2a3348;
+}
+
+.coaching-list p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+
 
 @media (prefers-reduced-motion: reduce) {
   * {

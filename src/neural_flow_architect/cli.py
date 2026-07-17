@@ -82,14 +82,15 @@ def status() -> None:
 def demo(
     duration: float = typer.Option(20.0, help="Seconds to run"),
     dry_run: bool = typer.Option(False, help="Do not apply effector side effects"),
+    adapter: str = typer.Option("simulator", help="simulator|replay"),
 ) -> None:
-    """Run a simulator closed-loop demo (no hardware required)."""
+    """Run a closed-loop demo (no hardware required)."""
     settings = get_settings()
-    settings.adapter = "simulator"
+    settings.adapter = adapter  # type: ignore[assignment]
     settings.dry_run = dry_run or settings.dry_run
     _banner()
     console.print(
-        f"[green]Starting simulator demo[/] for {duration:.0f}s "
+        f"[green]Starting demo[/] for {duration:.0f}s "
         f"(adapter={settings.adapter}, dry_run={settings.dry_run})"
     )
     asyncio.run(_run_live(settings, duration))
@@ -97,7 +98,9 @@ def demo(
 
 @app.command()
 def stream(
-    adapter: Optional[str] = typer.Option(None, help="simulator|brainflow|neuralink_stub"),
+    adapter: Optional[str] = typer.Option(
+        None, help="simulator|replay|brainflow|neuralink_stub"
+    ),
     duration: float = typer.Option(0.0, help="Seconds (0 = until Ctrl+C)"),
     dry_run: bool = typer.Option(False, help="Dry-run agent effectors"),
 ) -> None:
@@ -113,6 +116,126 @@ def stream(
         asyncio.run(_run_live(settings, dur))
     except KeyboardInterrupt:
         console.print("\n[yellow]Stopped by user[/]")
+
+
+@app.command()
+def bench(
+    channels: int = typer.Option(8, help="Channel count for stress test"),
+    iterations: int = typer.Option(40, help="Timed iterations"),
+    sample_rate: float = typer.Option(250.0, help="Sample rate Hz"),
+) -> None:
+    """Measure feature/flow/agent latency vs documented budgets."""
+    from neural_flow_architect.eval.latency import run_latency_bench
+
+    _banner()
+    console.print(
+        f"[green]Latency bench[/] channels={channels} iterations={iterations}"
+    )
+
+    async def _run():
+        return await run_latency_bench(
+            n_channels=channels,
+            iterations=iterations,
+            sample_rate_hz=sample_rate,
+        )
+
+    report = asyncio.run(_run())
+    data = report.to_dict()
+    table = Table(title="Latency (ms)", show_header=True, header_style="bold")
+    table.add_column("Stage")
+    table.add_column("p50")
+    table.add_column("p95")
+    table.add_column("Budget")
+    table.add_column("Pass")
+    for stage, stats in data["stages_ms"].items():
+        budget = data["budgets_ms"].get(stage, "—")
+        ok = data["pass"].get(stage, False)
+        table.add_row(
+            stage,
+            f"{stats['p50']:.2f}",
+            f"{stats['p95']:.2f}",
+            str(budget),
+            "✓" if ok else "✗",
+        )
+    console.print(table)
+    console.print(
+        f"[dim]all_pass={data['all_pass']} n_channels={data['n_channels']}[/]"
+    )
+    console.print("[dim]See docs/architecture/LATENCY_BUDGET.md[/]")
+
+
+@app.command("eval")
+def eval_cmd(
+    duration: float = typer.Option(20.0, help="Simulated seconds of offline replay"),
+    recipe: str = typer.Option("study", help="Environment recipe context"),
+    trajectory: Optional[str] = typer.Option(None, help="Path to trajectory JSON"),
+) -> None:
+    """Run offline evaluation harness (no server/hardware)."""
+    from pathlib import Path
+
+    from neural_flow_architect.eval.harness import run_offline_eval_sync
+
+    _banner()
+    console.print(f"[green]Offline eval[/] duration={duration}s recipe={recipe}")
+    report = run_offline_eval_sync(
+        trajectory_path=Path(trajectory) if trajectory else None,
+        duration_sec=duration,
+        recipe=recipe,
+        dry_run=True,
+    )
+    data = report.to_dict()
+    table = Table(title="Eval report", show_header=True, header_style="bold")
+    table.add_column("Metric")
+    table.add_column("Value")
+    for key in (
+        "ticks",
+        "mean_engagement",
+        "mean_confidence",
+        "protect_ticks",
+        "degraded_ticks",
+        "action_rate",
+    ):
+        table.add_row(key, str(data.get(key)))
+    console.print(table)
+    console.print(f"[dim]states={data.get('state_counts')}[/]")
+    console.print(f"[dim]modes={data.get('modes')}[/]")
+    console.print(f"[dim]actions={data.get('actions')}[/]")
+
+
+@app.command()
+def serve(
+    host: Optional[str] = typer.Option(None, help="Bind host (default 127.0.0.1)"),
+    port: Optional[int] = typer.Option(None, help="Bind port (default 8741)"),
+    adapter: str = typer.Option("simulator", help="simulator|replay|brainflow|neuralink_stub"),
+    dry_run: bool = typer.Option(False, help="Dry-run agent effectors"),
+) -> None:
+    """Start the local companion API (REST + WebSocket)."""
+    import uvicorn
+
+    from neural_flow_architect.api.server import create_app
+
+    settings = get_settings()
+    settings.adapter = adapter  # type: ignore[assignment]
+    settings.dry_run = dry_run or settings.dry_run
+    if host:
+        settings.api_host = host
+    if port:
+        settings.api_port = port
+
+    _banner()
+    console.print(
+        f"[green]Serving[/] http://{settings.api_host}:{settings.api_port}\n"
+        f"  WebSocket: ws://{settings.api_host}:{settings.api_port}/ws/state\n"
+        f"  Adapter: {settings.adapter}\n"
+        "[dim]Bound to localhost by default. Not a medical device.[/]"
+    )
+    app_instance = create_app(settings)
+    uvicorn.run(
+        app_instance,
+        host=settings.api_host,
+        port=settings.api_port,
+        log_level=settings.log_level.lower(),
+    )
 
 
 def _render_tick(tick: RuntimeTick) -> Panel:
@@ -147,15 +270,10 @@ def _render_tick(tick: RuntimeTick) -> Panel:
 
 async def _run_live(settings: Settings, duration: float | None) -> None:
     runtime = NeuralFlowRuntime(settings)
-    latest: list[RuntimeTick] = []
-
-    def on_tick(tick: RuntimeTick) -> None:
-        latest.clear()
-        latest.append(tick)
 
     with Live(Panel("Starting…", title="NFA"), console=console, refresh_per_second=4) as live:
+
         def _update(tick: RuntimeTick) -> None:
-            on_tick(tick)
             live.update(_render_tick(tick))
 
         ticks = await runtime.run(duration_sec=duration, on_tick=_update)

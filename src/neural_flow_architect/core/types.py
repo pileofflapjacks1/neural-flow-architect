@@ -117,7 +117,9 @@ class FlowEstimate(BaseModel):
 class ContextSnapshot(BaseModel):
     active_app: str | None = None
     time_of_day: str = "unknown"
+    hour: int | None = None
     user_goal: str | None = None
+    recipe: str = "study"  # study | create | rest | social
     focus_session_id: str | None = None
 
 
@@ -128,6 +130,9 @@ class UserPreferences(BaseModel):
     denied_tools: list[str] = Field(default_factory=list)
     granted_tools: list[str] = Field(default_factory=list)
     require_confirm_high_impact: bool = True
+    preferred_recipe: str = "study"
+    label_count: int = 0
+    positive_flow_labels: int = 0
 
 
 class WorldSnapshot(BaseModel):

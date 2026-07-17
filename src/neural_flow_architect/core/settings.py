@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     sample_rate_hz: float = 250.0
     channels: int = 8
     simulator_seed: int = 42
+    replay_path: str = ""
+    replay_loop: bool = True
 
     brainflow_board_id: int = -1
     brainflow_serial_port: str = ""
@@ -46,6 +48,20 @@ class Settings(BaseSettings):
     protect_engagement_threshold: float = 0.62
     deep_flow_engagement_threshold: float = 0.82
 
+    # Predictive layer (research-grade, off by default)
+    predictive_enabled: bool = False
+    predictive_min_confidence: float = 0.55
+
+    # Optional local LLM wording (never receives raw neural data)
+    llm_enabled: bool = False
+    llm_base_url: str = "http://127.0.0.1:11434"
+    llm_model: str = "llama3.2"
+    llm_timeout_sec: float = 2.5
+
+    # OS notification hooks (companion policy always; OS backend optional)
+    os_notifications: bool = False
+    os_notifications_announce: bool = False
+
     iot_enabled: bool = False
     home_assistant_url: str = ""
     home_assistant_token: str = ""
@@ -56,6 +72,7 @@ class Settings(BaseSettings):
     window_sec: float = 1.0
     hop_sec: float = 0.25
     loop_hz: float = 4.0
+    include_connectivity: bool = False
 
     def ensure_data_dirs(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -117,10 +134,15 @@ def _yaml_to_settings_kwargs(yaml_data: dict[str, Any]) -> dict[str, Any]:
             "min_confidence": "agent_min_confidence",
             "min_quality": "agent_min_quality",
             "require_confirm_for_high_impact": "require_confirm_for_high_impact",
+            "predictive_enabled": "predictive_enabled",
+            "llm_enabled": "llm_enabled",
+            "llm_base_url": "llm_base_url",
+            "llm_model": "llm_model",
         }
         for src, dst in mapping.items():
             if src in agent:
                 out[dst] = agent[src]
+
     if isinstance(environment, dict) and "iot_enabled" in environment:
         out["iot_enabled"] = environment["iot_enabled"]
     if isinstance(api, dict):

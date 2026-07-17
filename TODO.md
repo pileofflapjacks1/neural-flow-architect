@@ -30,41 +30,42 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] CLI: `nfa demo`, `nfa stream`, `nfa status`
 - [x] Unit tests for flow state machine + agent policies
 - [x] Frontend scaffold (BCI-native layout stubs)
-- [ ] CI workflow (lint, typecheck, test) on GitHub Actions
+- [ ] CI workflow (lint, typecheck, test) on GitHub Actions (pending workflow OAuth scope)
 - [ ] Pre-commit config committed and documented
 - [ ] First annotated public demo GIF / short video
-- [ ] CODEOWNERS and issue/PR templates
+- [x] Issue/PR templates
 
 ---
 
 ## Phase 1 — MVP usable with open tools
 
 ### Signal & flow
-- [ ] BrainFlow adapter with live board + file replay
-- [ ] Quality metrics (impedance proxy, artifact flags, SNR heuristics)
-- [ ] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
-- [ ] Configurable band-power / connectivity feature set
-- [ ] Session labeling UI (self-report: “I felt in flow”) for supervised personalization
-- [ ] Graceful degradation when channels drop or quality is low
+- [~] BrainFlow adapter skeleton (live); file-style path via **replay** fixture
+- [x] Replay adapter + synthetic trajectory fixture
+- [x] Quality metrics (clip/flat/noise/dropout heuristics + overall score)
+- [x] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
+- [x] Optional connectivity feature flag (`include_connectivity`)
+- [x] Session labeling UI (self-report: “I felt in flow”) for supervised personalization
+- [x] Graceful degradation when quality is low (idle_degraded + no IoT)
 
 ### Agent
-- [ ] Tool registry with permission tiers (low / medium / high impact)
-- [ ] Instant override channel (hotkey / neural command / voice)
-- [ ] Preference learning from accept / reject / undo
-- [ ] Explanation log exported with sessions
-- [ ] Optional local LLM tool-calling backend (no cloud default)
+- [x] Tool registry with permission tiers (low / medium / high impact)
+- [x] Instant override channel (API + companion UI pause)
+- [x] Preference learning from accept / reject / undo (Never / Allow always + undo stack)
+- [x] Explanation log exported with sessions
+- [x] Optional local LLM explanation wording (no cloud default; tool-calling later)
 
 ### Environment
-- [ ] OS notification suppression hooks (platform-specific modules)
-- [ ] Focus mode: reduce UI chrome in companion UI
-- [ ] Home Assistant integration behind explicit consent + `NFA_IOT_ENABLED`
-- [ ] Safe action simulation mode (“dry run”) always available
+- [x] OS notification suppression hooks (platform modules + null default)
+- [x] Focus mode: reduce UI chrome in companion UI (in-process density/focus)
+- [x] Home Assistant optional integration (soft-fail; `NFA_IOT_ENABLED` + URL/token)
+- [x] Safe action simulation mode (“dry run”) always available
 
 ### Product surface
-- [ ] Local WebSocket API for state + explanations
-- [ ] Companion UI: live flow indicator, explain drawer, override
-- [ ] Post-session Flow Insights page (local only)
-- [ ] Data export (JSON) with minimization options
+- [x] Local WebSocket API for state + explanations (`nfa serve`)
+- [x] Companion UI: live flow indicator, explain drawer, override
+- [x] Post-session Flow Insights page (local only)
+- [x] Data export (JSON) with minimization options (`/session/export`)
 
 ### Quality
 - [ ] Integration tests with fixture EEG
@@ -75,23 +76,28 @@ Check items as they ship. Prefer small, reviewable PRs.
 
 ## Phase 2 — Full agentic co-pilot + personalization
 
-- [ ] Multi-agent decomposition (Monitor, Protector, ReEntry, Explainer)
-- [ ] Predictive intent-precursor layer (research-grade, off by default)
-- [ ] Longitudinal personalization models per user profile
-- [ ] Smart environment recipes (study, create, rest, social)
-- [ ] Coaching plans (weekly gentle suggestions, user-gated)
-- [ ] Context sources: active app (with OS permission), calendar optional
-- [ ] Evaluation harness: offline replay of sessions + policy scores
+- [x] Multi-agent decomposition (Protector, ReEntry, Transition + Explainer/Governor)
+- [x] Predictive intent-precursor layer (research-grade, off by default)
+- [x] Longitudinal personalization from self-report labels (threshold nudges)
+- [x] Smart environment recipes (study, create, rest, social)
+- [x] Coaching notes from local session history (gentle, non-medical)
+- [x] Context enrichment: time of day, recipe, optional active_app / user_goal API
+- [x] Evaluation harness: offline replay → policy scores (`nfa eval`)
+- [x] Signal quality metrics + IoT stripped on low quality
+- [x] Home Assistant optional REST path (soft-fail; enable via `NFA_IOT_ENABLED`)
+- [x] Optional local LLM explanation wording (summaries only; Ollama/local URL)
+- [x] OS notification hooks (null/macOS/Linux best-effort)
+- [x] Latency budget docs + `nfa bench` (incl. high-channel stress)
 
 ---
 
 ## Phase 3 — High-bandwidth / Neuralink path
 
 - [ ] Production adapter implementing high-level intent + feature streams
-- [ ] Channel/count-agnostic pipeline stress tests (thousands of channels simulated)
-- [ ] Low-latency path profiling and zero-copy buffers where needed
+- [x] Channel/count-agnostic pipeline stress tests (`nfa bench --channels 256|1024`)
+- [x] Low-latency path profiling (`nfa bench` + LATENCY_BUDGET.md); zero-copy later
 - [ ] Clinical/research partnership documentation (no PHI in public repo)
-- [ ] Advanced predictive tools under strict consent + audit
+- [x] Advanced predictive tools under strict consent + opt-in flag (heuristic v0)
 
 ---
 

@@ -24,9 +24,17 @@ agent:
   min_confidence: 0.45
   min_quality: 0.35
   require_confirm_for_high_impact: true
+  # Research-grade; off by default
+  predictive_enabled: false
+  # Optional local Ollama/OpenAI-compatible wording (summaries only)
+  llm_enabled: false
+  llm_base_url: "http://127.0.0.1:11434"
+  llm_model: "llama3.2"
 
 environment:
   iot_enabled: false
+  # Best-effort OS notification policy hooks (macOS/Linux); off by default
+  # os_notifications: false
 
 api:
   host: 127.0.0.1
