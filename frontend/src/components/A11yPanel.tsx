@@ -116,7 +116,7 @@ export function A11yPanel() {
         Command bar (voice/type)
       </label>
       <label className="a11y-row">
-        Dwell ms
+        Dwell fill ms (hover/focus hold)
         <input
           type="number"
           min={400}
@@ -126,6 +126,10 @@ export function A11yPanel() {
           onChange={(e) => save({ dwell_ms: Number(e.target.value) })}
         />
       </label>
+      <p className="dim">
+        Pause / Undo / Rest fill while you hold the pointer or focus. Click still
+        activates instantly. Scan mode auto-fills the highlighted control.
+      </p>
       <label className="a11y-row">
         <input
           type="checkbox"

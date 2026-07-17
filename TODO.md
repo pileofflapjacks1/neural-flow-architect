@@ -61,6 +61,8 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Personal flow signature v0
 - [x] `nfa soak` long-session stability test
 - [x] Good-first-issues list (docs/CONTRIBUTING_ISSUES.md)
+- [x] Dwell-fill targets (Pause/Undo/Rest + scan auto-select)
+- [x] Block-review → threshold/policy learning
 - [x] Quality metrics (clip/flat/noise/dropout heuristics + overall score)
 - [x] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
 - [x] Optional connectivity feature flag (`include_connectivity`)

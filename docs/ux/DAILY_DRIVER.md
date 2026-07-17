@@ -22,6 +22,31 @@ Everything routes through the shared **IntentRouter**:
 | Voice / type | Command bar: “pause”, “undo”, “rest mode”, … |
 | UI buttons | Sticky Pause · Undo · Rest |
 
+## Dwell fill (implant-friendly select)
+
+Primary controls (**Pause · Undo · Rest**) show a **fill bar** while the pointer
+or focus stays on the target. When the bar completes (default ~1200 ms from
+Access → Dwell fill ms), the action fires.
+
+- **Click / tap** still activates immediately  
+- **Scan mode** fills the highlighted control, then selects  
+- **Space / Enter** still select in scan mode  
+
+Tune dwell under **Access**. Respects reduced-motion (no fancy animation curves).
+
+## End-of-block review → learning
+
+When you **Stop session**, a short review asks if the block (and co-pilot) helped.
+
+| Answer | Learning effect |
+|---|---|
+| Yes, helpful | Slightly ease flow-entry thresholds; reinforce protect tools |
+| Block OK, co-pilot noisy | Force **calm** protect style; penalize suppress/focus cooldowns |
+| Not really | Raise thresholds; calm style |
+| Skip | No threshold change |
+
+Reviews also feed the personal flow signature (`GET /signature`).
+
 ## Accessibility
 
 Open **Access** tab (full mode) or API `POST /a11y`:

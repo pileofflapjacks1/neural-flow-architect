@@ -11,6 +11,7 @@ import { VoiceCommandBar } from "./components/VoiceCommandBar";
 import { A11yPanel } from "./components/A11yPanel";
 import { BlockReviewModal } from "./components/BlockReviewModal";
 import { ScanMode } from "./components/ScanMode";
+import { DwellButton } from "./components/DwellButton";
 import { CaregiverChecklist } from "./components/CaregiverChecklist";
 import { SignaturePanel } from "./components/SignaturePanel";
 import { useNfaSession } from "./hooks/useNfaSession";
@@ -63,6 +64,8 @@ export function App() {
   const simple = state.simple_mode !== false;
   const a11y = state.a11y;
   const scanOn = !!(state.scan_mode || a11y?.scan_mode);
+  const dwellMs = a11y?.dwell_ms ?? state.a11y?.dwell_ms ?? 1200;
+  const dwellOn = true; // always available for low-precision; click still instant
   const keyboardOn = a11y?.keyboard_enabled !== false && !scanOn;
   useKeyboardIntents(keyboardOn);
 
@@ -133,29 +136,35 @@ export function App() {
         <ScanMode
           enabled
           intervalMs={state.scan_interval_ms || a11y?.scan_interval_ms || 1400}
+          dwellMs={dwellMs}
+          dwellEnabled={dwellOn}
           actions={scanActions}
         />
       ) : (
         <div className="sticky-controls" role="toolbar" aria-label="Primary controls">
-          <button
-            type="button"
-            className="target-btn override"
-            onClick={() => setPaused(!state.agent_paused)}
+          <DwellButton
+            label={state.agent_paused ? "Resume" : "Pause"}
+            onActivate={() => setPaused(!state.agent_paused)}
+            dwellMs={dwellMs}
+            dwellEnabled={dwellOn}
+            variant="override"
             aria-pressed={state.agent_paused}
-          >
-            {state.agent_paused ? "Resume" : "Pause"}
-          </button>
-          <button
-            type="button"
-            className="target-btn"
-            onClick={() => undo()}
+          />
+          <DwellButton
+            label="Undo"
+            onActivate={() => undo()}
+            dwellMs={dwellMs}
+            dwellEnabled={dwellOn}
             disabled={!state.can_undo}
-          >
-            Undo
-          </button>
-          <button type="button" className="target-btn secondary" onClick={() => restMode()}>
-            Rest
-          </button>
+            variant="primary"
+          />
+          <DwellButton
+            label="Rest"
+            onActivate={() => restMode()}
+            dwellMs={dwellMs}
+            dwellEnabled={dwellOn}
+            variant="secondary"
+          />
         </div>
       )}
 

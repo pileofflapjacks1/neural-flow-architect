@@ -25,6 +25,7 @@ from neural_flow_architect.environment.recipes import apply_recipe, list_recipes
 from neural_flow_architect.insights.coaching import build_coaching_notes
 from neural_flow_architect.personalization.feedback import FeedbackStore
 from neural_flow_architect.personalization.learning import (
+    learn_from_block_review,
     learn_from_session_summary,
     update_thresholds_from_label,
 )
@@ -853,6 +854,46 @@ class SessionController:
         self.caregiver.save(
             self.settings.data_dir / "profiles" / "caregiver_checklist.json"
         )
+
+        # Learn from block review (thresholds + protect style)
+        last = sessions[0] if sessions else {}
+        learn_msg = learn_from_block_review(
+            self.profile,
+            helpful_block=helpful_block,
+            architect_helpful=architect_helpful,
+            undos_count=int(last.get("undos_count") or 0),
+            actions_count=int(last.get("actions_count") or 0),
+            peak_engagement=float(last.get("peak_engagement") or 0),
+            recipe=str(last.get("recipe") or self._recipe),
+        )
+        if learn_msg:
+            # If architect noisy, treat recent suppress/focus as unhelpful bias
+            if architect_helpful is False:
+                for tool_id in ("notify.suppress_noncritical", "focus.enable", "recipe.apply"):
+                    self.feedback.record(
+                        tool_id,
+                        "unhelpful",
+                        note="auto:block_review_noisy",
+                        denied_tools=list(self.profile.preferences.denied_tools),
+                        granted_tools=list(self.profile.preferences.granted_tools),
+                    )
+                    self.runtime.architect.governor.penalize_cooldown(tool_id, 180.0)
+            if architect_helpful is True:
+                for tool_id in ("notify.suppress_noncritical", "focus.enable"):
+                    out = self.feedback.record(
+                        tool_id,
+                        "helpful",
+                        note="auto:block_review_good",
+                        denied_tools=list(self.profile.preferences.denied_tools),
+                        granted_tools=list(self.profile.preferences.granted_tools),
+                    )
+                    self.profile.preferences.denied_tools = out["denied_tools"]
+                    self.profile.preferences.granted_tools = out["granted_tools"]
+            self.profile.save(self.settings.data_dir / "profiles")
+            self.runtime.flow.protect_t = self.profile.protect_engagement_threshold
+            self.runtime.flow.deep_t = self.profile.deep_flow_engagement_threshold
+            self.audit.record("learning.block_review", learn_msg)
+
         self.audit.record(
             "block_review",
             "End-of-block review submitted",
@@ -862,10 +903,22 @@ class SessionController:
         state = self.get_state()
         state["pending_block_review"] = None
         state["last_block_review"] = review_payload
+        state["learning"] = {"message": learn_msg} if learn_msg else None
         state["caregiver_checklist"] = self.caregiver.to_dict()
         state["personal_signature"] = self.personal_signature()
+        state["thresholds"] = {
+            "protect": self.profile.protect_engagement_threshold,
+            "deep": self.profile.deep_flow_engagement_threshold,
+        }
+        state["preferences"] = self.profile.preferences.model_dump()
+        state["feedback"] = self.feedback.as_dict()
         self._publish(state)
-        return {"ok": True, "review": review_payload, "state": state}
+        return {
+            "ok": True,
+            "review": review_payload,
+            "learning": learn_msg,
+            "state": state,
+        }
 
     def personal_signature(self) -> dict[str, Any]:
         sessions = self.list_sessions(limit=50)

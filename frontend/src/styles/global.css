@@ -501,6 +501,47 @@ html.nfa-reduced-motion *,
   padding: 0;
 }
 
+/* Dwell fill targets */
+.dwell-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.dwell-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(
+    90deg,
+    rgba(110, 168, 255, 0.45),
+    rgba(62, 207, 142, 0.5)
+  );
+  z-index: 0;
+  pointer-events: none;
+  transition: none;
+}
+
+.dwell-label,
+.dwell-pct {
+  position: relative;
+  z-index: 1;
+}
+
+.dwell-pct {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  z-index: 1;
+}
+
+html.nfa-reduced-motion .dwell-fill {
+  transition: none;
+}
+
 
 
 

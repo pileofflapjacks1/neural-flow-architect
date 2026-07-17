@@ -51,6 +51,8 @@ export type NfaState = {
     keyboard_enabled?: boolean;
     voice_command_bar?: boolean;
     auto_start_on_preset?: boolean;
+    scan_mode?: boolean;
+    scan_interval_ms?: number;
     css?: Record<string, string>;
   };
   session_health?: {
