@@ -99,6 +99,12 @@ class FeedbackBody(BaseModel):
     note: str = ""
 
 
+class QuietHoursBody(BaseModel):
+    enabled: bool | None = None
+    start_hour: int | None = None
+    end_hour: int | None = None
+
+
 def create_app(
     settings: Settings | None = None,
     controller: SessionController | None = None,
@@ -222,6 +228,34 @@ def create_app(
     @app.get("/trust")
     async def trust() -> dict[str, Any]:
         return session.trust_metrics()
+
+    @app.get("/audit")
+    async def audit(limit: int = 50) -> dict[str, Any]:
+        return session.get_audit(limit=min(limit, 200))
+
+    @app.get("/quiet_hours")
+    async def get_quiet_hours() -> dict[str, Any]:
+        from neural_flow_architect.core.quiet_hours import QuietHours
+
+        prefs = session.profile.preferences
+        qh = QuietHours(
+            enabled=prefs.quiet_hours_enabled,
+            start_hour=prefs.quiet_hours_start,
+            end_hour=prefs.quiet_hours_end,
+        )
+        return {"quiet_hours": qh.to_dict()}
+
+    @app.post("/quiet_hours")
+    async def post_quiet_hours(body: QuietHoursBody) -> dict[str, Any]:
+        return session.set_quiet_hours(
+            enabled=body.enabled,
+            start_hour=body.start_hour,
+            end_hour=body.end_hour,
+        )
+
+    @app.post("/recipe/accept_suggestion")
+    async def accept_recipe_suggestion() -> dict[str, Any]:
+        return session.accept_recipe_suggestion()
 
     @app.get("/environment")
     async def environment() -> dict[str, Any]:

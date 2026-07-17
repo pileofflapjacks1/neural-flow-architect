@@ -145,6 +145,12 @@ class UserPreferences(BaseModel):
     keyboard_enabled: bool = True
     voice_command_bar: bool = True
     auto_start_on_preset: bool = False
+    # Quiet hours (local clock) — soft-limit medium/high actions
+    quiet_hours_enabled: bool = False
+    quiet_hours_start: int = Field(default=22, ge=0, le=23)
+    quiet_hours_end: int = Field(default=7, ge=0, le=23)
+    # Soft recipe suggestion from active app (never auto-switch without consent)
+    suggest_recipe_from_app: bool = True
 
 
 class WorldSnapshot(BaseModel):

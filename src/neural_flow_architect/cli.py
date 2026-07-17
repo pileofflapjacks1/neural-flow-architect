@@ -78,6 +78,49 @@ def status() -> None:
     )
 
 
+@app.command()
+def report(
+    data_dir: Optional[str] = typer.Option(None, help="Override data directory"),
+) -> None:
+    """Print local trust + session summary report (no raw neural data)."""
+    from pathlib import Path
+
+    from neural_flow_architect.core.session import SessionController
+    from neural_flow_architect.insights.trust import compute_trust_metrics
+
+    settings = get_settings()
+    if data_dir:
+        settings.data_dir = Path(data_dir)
+    session = SessionController(settings)
+    trust = session.trust_metrics()
+    sessions = session.list_sessions()
+    _banner()
+    t = trust.get("trust") or {}
+    table = Table(title="Trust report", show_header=True, header_style="bold")
+    table.add_column("Metric")
+    table.add_column("Value")
+    for k in (
+        "trust_score",
+        "undo_rate",
+        "helpful",
+        "unhelpful",
+        "never",
+        "actions_count",
+        "undos_count",
+        "interpretation",
+    ):
+        table.add_row(k, str(t.get(k, "—")))
+    console.print(table)
+    console.print(f"[dim]Sessions on disk: {len(sessions)}[/]")
+    if sessions:
+        s0 = sessions[0]
+        console.print(
+            f"[dim]Latest: {s0.get('session_id', '')[:8]}… "
+            f"peak={s0.get('peak_engagement')} flow_min={s0.get('flow_minutes')}[/]"
+        )
+    console.print(f"[dim]IoT mode: {(trust.get('iot') or {}).get('mode')}[/]")
+
+
 @app.command("contract")
 def contract_cmd(
     adapter: str = typer.Option("simulator", help="simulator|replay|neuralink_stub|brainflow"),

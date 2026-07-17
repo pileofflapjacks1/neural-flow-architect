@@ -144,3 +144,29 @@ def recipe_hint_for_category(category: str) -> str | None:
         "system": None,
         "unknown": None,
     }.get(category)
+
+
+def recipe_suggestion(
+    *,
+    current_recipe: str,
+    app_category: str,
+    suggest_enabled: bool = True,
+) -> dict[str, object] | None:
+    """
+    Soft suggestion when active app category disagrees with current recipe.
+
+    Never auto-applies — UI/API surfaces suggestion for one-tap accept.
+    """
+    if not suggest_enabled:
+        return None
+    hint = recipe_hint_for_category(app_category)
+    if not hint or hint == current_recipe:
+        return None
+    return {
+        "suggested_recipe": hint,
+        "from_category": app_category,
+        "current_recipe": current_recipe,
+        "message": (
+            f"You seem to be in a {app_category} app — switch recipe to {hint}?"
+        ),
+    }

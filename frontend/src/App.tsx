@@ -47,6 +47,7 @@ export function App() {
     feedback,
     clearFailsafe,
     refresh,
+    acceptRecipeSuggestion,
   } = useNfaSession();
   const [showWhy, setShowWhy] = useState(false);
   const [tab, setTab] = useState<"live" | "insights" | "coaching" | "access">("live");
@@ -153,6 +154,27 @@ export function App() {
                 Clear fail-safe
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {state.quiet_hours?.active_now && (
+        <div className="banner info" role="status">
+          Quiet hours active — proactive protect is softened.
+        </div>
+      )}
+
+      {state.recipe_suggestion && simple && (
+        <div className="banner info" role="status">
+          {String(state.recipe_suggestion.message)}
+          <div className="action-row" style={{ marginTop: "0.5rem" }}>
+            <button
+              type="button"
+              className="target-btn"
+              onClick={() => acceptRecipeSuggestion()}
+            >
+              Switch recipe
+            </button>
           </div>
         </div>
       )}
@@ -357,7 +379,14 @@ export function App() {
             )}
 
             {!simple && tab === "insights" && (
-              <InsightsPanel session={state.session} />
+              <InsightsPanel
+                session={state.session}
+                context={state.context}
+                quietHours={state.quiet_hours}
+                recipeSuggestion={state.recipe_suggestion}
+                auditRecent={state.audit_recent}
+                onAcceptRecipe={() => acceptRecipeSuggestion()}
+              />
             )}
             {!simple && tab === "coaching" && <CoachingPanel />}
             {!simple && tab === "access" && <A11yPanel />}

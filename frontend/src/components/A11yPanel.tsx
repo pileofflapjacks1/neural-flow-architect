@@ -10,6 +10,10 @@ type A11y = {
   keyboard_enabled: boolean;
   voice_command_bar: boolean;
   auto_start_on_preset: boolean;
+  quiet_hours_enabled?: boolean;
+  quiet_hours_start?: number;
+  quiet_hours_end?: number;
+  suggest_recipe_from_app?: boolean;
 };
 
 export function A11yPanel() {
@@ -119,6 +123,42 @@ export function A11yPanel() {
           value={a11y.dwell_ms}
           onChange={(e) => save({ dwell_ms: Number(e.target.value) })}
         />
+      </label>
+      <label className="a11y-row">
+        <input
+          type="checkbox"
+          checked={!!a11y.quiet_hours_enabled}
+          onChange={(e) => save({ quiet_hours_enabled: e.target.checked })}
+        />
+        Quiet hours (soften protect at night)
+      </label>
+      <label className="a11y-row">
+        Quiet start hour
+        <input
+          type="number"
+          min={0}
+          max={23}
+          value={a11y.quiet_hours_start ?? 22}
+          onChange={(e) => save({ quiet_hours_start: Number(e.target.value) })}
+        />
+      </label>
+      <label className="a11y-row">
+        Quiet end hour
+        <input
+          type="number"
+          min={0}
+          max={23}
+          value={a11y.quiet_hours_end ?? 7}
+          onChange={(e) => save({ quiet_hours_end: Number(e.target.value) })}
+        />
+      </label>
+      <label className="a11y-row">
+        <input
+          type="checkbox"
+          checked={a11y.suggest_recipe_from_app !== false}
+          onChange={(e) => save({ suggest_recipe_from_app: e.target.checked })}
+        />
+        Suggest recipe from active app
       </label>
       <div className="action-row">
         <button type="button" className="target-btn secondary" onClick={exportProfile}>

@@ -64,6 +64,18 @@ export type NfaState = {
     message?: string;
   };
   recent_actions?: Array<{ tool_id?: string; explanation?: string }>;
+  quiet_hours?: {
+    enabled?: boolean;
+    start_hour?: number;
+    end_hour?: number;
+    active_now?: boolean;
+  };
+  recipe_suggestion?: {
+    suggested_recipe?: string;
+    message?: string;
+    from_category?: string;
+  } | null;
+  audit_recent?: Array<Record<string, unknown>>;
   preferences?: Record<string, unknown>;
   context?: Record<string, unknown>;
   ts?: string;
@@ -277,6 +289,15 @@ export function useNfaSession() {
     }
   }, []);
 
+  const acceptRecipeSuggestion = useCallback(async () => {
+    try {
+      const res = await post("/recipe/accept_suggestion");
+      if (res.state) setState((s) => ({ ...s, ...res.state }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "accept recipe failed");
+    }
+  }, []);
+
   return {
     state,
     connected,
@@ -294,6 +315,7 @@ export function useNfaSession() {
     setSimpleMode,
     feedback,
     clearFailsafe,
+    acceptRecipeSuggestion,
     refresh,
   };
 }

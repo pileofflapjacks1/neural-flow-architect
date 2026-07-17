@@ -49,6 +49,12 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] IoT force dry-run safety pack
 - [x] Session trust metrics (`GET /trust`)
 - [x] Threat model (STRIDE-lite)
+- [x] Local audit log (JSONL, no raw neural)
+- [x] Quiet hours soft policy
+- [x] Soft recipe suggestions from app category
+- [x] Trust panel + audit in Insights UI
+- [x] `nfa report` CLI
+- [x] Version 0.2.0
 - [x] Quality metrics (clip/flat/noise/dropout heuristics + overall score)
 - [x] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
 - [x] Optional connectivity feature flag (`include_connectivity`)

@@ -30,7 +30,9 @@ from neural_flow_architect.personalization.learning import (
 )
 from neural_flow_architect.personalization.presets import get_preset, list_presets
 from neural_flow_architect.personalization.profile import UserProfile
+from neural_flow_architect.privacy.audit import AuditLog
 from neural_flow_architect.privacy.consent import ConsentScope
+from neural_flow_architect.core.quiet_hours import QuietHours
 
 
 StateListener = Callable[[dict[str, Any]], None]
@@ -61,6 +63,7 @@ class SessionController:
             low_quality_streak=self.settings.failsafe_quality_streak,
         )
         self.feedback = FeedbackStore()
+        self.audit = AuditLog(self.settings.data_dir / "audit")
         self.runtime = self._new_runtime()
         self._task: asyncio.Task[list[RuntimeTick]] | None = None
         self._listeners: list[asyncio.Queue[dict[str, Any]]] = []
@@ -70,6 +73,7 @@ class SessionController:
         self._tick_count = 0
         self._session_started_at: datetime | None = None
         self._last_checkpoint_at: datetime | None = None
+        self.audit.record("session.init", "Session controller ready")
 
     def _new_runtime(self) -> NeuralFlowRuntime:
         rt = NeuralFlowRuntime(
@@ -169,6 +173,13 @@ class SessionController:
             "failsafe": self.failsafe.state.to_dict(),
             "recent_actions": [],
             "feedback": self.feedback.as_dict(),
+            "quiet_hours": QuietHours(
+                enabled=self.profile.preferences.quiet_hours_enabled,
+                start_hour=self.profile.preferences.quiet_hours_start,
+                end_hour=self.profile.preferences.quiet_hours_end,
+            ).to_dict(),
+            "recipe_suggestion": None,
+            "audit_recent": self.audit.recent(10),
             "shortcuts": [],
             "help": {
                 "user_guide": "docs/ux/USER_GUIDE.md",
@@ -190,6 +201,10 @@ class SessionController:
             "keyboard_enabled": p.keyboard_enabled,
             "voice_command_bar": p.voice_command_bar,
             "auto_start_on_preset": p.auto_start_on_preset,
+            "quiet_hours_enabled": p.quiet_hours_enabled,
+            "quiet_hours_start": p.quiet_hours_start,
+            "quiet_hours_end": p.quiet_hours_end,
+            "suggest_recipe_from_app": p.suggest_recipe_from_app,
             "css": {
                 "--nfa-scale": str(p.ui_scale),
                 "--target-min": f"{int(64 * p.ui_scale)}px",
@@ -394,11 +409,37 @@ class SessionController:
             "failsafe": tick.failsafe or self.failsafe.state.to_dict(),
             "recent_actions": list(self.runtime.architect.last_actions[-5:]),
             "feedback": self.feedback.as_dict(),
+            "quiet_hours": QuietHours(
+                enabled=self.profile.preferences.quiet_hours_enabled,
+                start_hour=self.profile.preferences.quiet_hours_start,
+                end_hour=self.profile.preferences.quiet_hours_end,
+            ).to_dict(),
+            "recipe_suggestion": self._recipe_suggestion(),
+            "audit_recent": self.audit.recent(10),
             "shortcuts": keymap_for_ui(),
             "help": self._idle_state()["help"],
             "ts": now.isoformat(),
         }
+        # Audit new successful actions (no neural samples)
+        for act in tick.decision.results:
+            if act.success:
+                self.audit.record(
+                    "agent.action",
+                    act.message or act.tool_id,
+                    tool_id=act.tool_id,
+                    mode=tick.decision.mode.value,
+                )
         self._publish(state)
+
+    def _recipe_suggestion(self) -> dict[str, Any] | None:
+        from neural_flow_architect.core.active_app import recipe_suggestion
+
+        ctx = self.context_for_runtime()
+        return recipe_suggestion(
+            current_recipe=self._recipe,
+            app_category=ctx.app_category or "unknown",
+            suggest_enabled=self.profile.preferences.suggest_recipe_from_app,
+        )
 
     def set_simple_mode(self, enabled: bool) -> dict[str, Any]:
         self.profile.preferences.simple_mode = enabled
@@ -452,6 +493,10 @@ class SessionController:
             "keyboard_enabled",
             "voice_command_bar",
             "auto_start_on_preset",
+            "suggest_recipe_from_app",
+            "quiet_hours_enabled",
+            "quiet_hours_start",
+            "quiet_hours_end",
         }
         for key, val in kwargs.items():
             if key in allowed and val is not None:
@@ -609,6 +654,7 @@ class SessionController:
         if paused:
             self.runtime.physical.enabled = False
             self.runtime.architect.force_idle = True
+            self.audit.record("override.pause", "User paused Architect")
         else:
             self.runtime.physical.enabled = self.settings.iot_enabled
             if self.failsafe.state.reason in {
@@ -616,10 +662,12 @@ class SessionController:
                 FailSafeReason.USER_PAUSE,
             }:
                 self.runtime.architect.force_idle = False
+            self.audit.record("override.resume", "User resumed Architect")
         state = self.get_state()
         state["agent_paused"] = paused
         state["preferences"] = self.profile.preferences.model_dump()
         state["failsafe"] = self.failsafe.state.to_dict()
+        state["audit_recent"] = self.audit.recent(10)
         if paused:
             state["mode"] = AgentMode.IDLE.value
             state["signal"] = state.get("signal") or "good"
@@ -687,12 +735,60 @@ class SessionController:
         if rating == "unhelpful":
             self.runtime.architect.governor.penalize_cooldown(tool_id, 120.0)
         self.profile.save(self.settings.data_dir / "profiles")
+        self.audit.record(
+            "feedback",
+            out.get("message", rating),
+            tool_id=tool_id,
+            rating=rating,
+        )
         state = self.get_state()
         state["preferences"] = self.profile.preferences.model_dump()
         state["feedback"] = self.feedback.as_dict()
         state["last_feedback"] = out
+        state["audit_recent"] = self.audit.recent(10)
         self._publish(state)
         return {"ok": True, **out, "state": state}
+
+    def set_quiet_hours(
+        self,
+        *,
+        enabled: bool | None = None,
+        start_hour: int | None = None,
+        end_hour: int | None = None,
+    ) -> dict[str, Any]:
+        prefs = self.profile.preferences
+        if enabled is not None:
+            prefs.quiet_hours_enabled = enabled
+        if start_hour is not None:
+            prefs.quiet_hours_start = int(start_hour) % 24
+        if end_hour is not None:
+            prefs.quiet_hours_end = int(end_hour) % 24
+        self.profile.save(self.settings.data_dir / "profiles")
+        qh = QuietHours(
+            enabled=prefs.quiet_hours_enabled,
+            start_hour=prefs.quiet_hours_start,
+            end_hour=prefs.quiet_hours_end,
+        )
+        self.audit.record(
+            "prefs.quiet_hours",
+            f"quiet_hours enabled={qh.enabled} {qh.start_hour}-{qh.end_hour}",
+        )
+        state = self.get_state()
+        state["quiet_hours"] = qh.to_dict()
+        state["preferences"] = prefs.model_dump()
+        self._publish(state)
+        return {"ok": True, "quiet_hours": qh.to_dict(), "state": state}
+
+    def accept_recipe_suggestion(self) -> dict[str, Any]:
+        sug = self._recipe_suggestion()
+        if not sug:
+            return {"ok": False, "message": "No suggestion active"}
+        recipe = str(sug["suggested_recipe"])
+        self.audit.record("recipe.accept_suggestion", f"Accepted {recipe}", **sug)
+        return self.set_recipe(recipe)
+
+    def get_audit(self, limit: int = 50) -> dict[str, Any]:
+        return {"ok": True, "events": self.audit.recent(limit)}
 
     def set_tool_preference(self, tool_id: str, action: str) -> dict[str, Any]:
         prefs = self.profile.preferences

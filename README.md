@@ -1,6 +1,6 @@
 # Neural Flow Architect
 
-**Version 1.0 – Public Open-Source Foundation**  
+**Version 0.2.0 – Daily-driver foundation**  
 **Date: July 2026**
 
 > A closed-loop, proactive AI co-pilot for high-bandwidth brain–computer interface (BCI) users — designed to detect, protect, deepen, and help re-enter **flow states**, then orchestrate digital and physical environments so meaningful work can continue with less friction.
@@ -197,6 +197,7 @@ nfa eval --duration 20 --recipe study
 nfa bench --channels 8 --iterations 40
 nfa contract --adapter simulator   # adapter golden suite
 nfa contract --adapter replay
+nfa report                         # local trust + session summary
 ```
 
 Optional app-aware protection (local window titles only):
