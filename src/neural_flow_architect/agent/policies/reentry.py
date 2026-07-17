@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from neural_flow_architect.core.types import ActionProposal, ImpactLevel, WorldSnapshot
 from neural_flow_architect.environment.recipes import recipe_reentry_bonus
 
@@ -9,7 +11,7 @@ from neural_flow_architect.environment.recipes import recipe_reentry_bonus
 def propose_reentry(snapshot: WorldSnapshot) -> list[ActionProposal]:
     flow = snapshot.flow
     recipe = snapshot.context.recipe or "study"
-    causes = [
+    causes: list[dict[str, Any]] = [
         {"signal": "module", "value": "reentry"},
         {"signal": "state", "value": flow.state.value},
         {"signal": "engagement", "value": round(flow.engagement, 3)},

@@ -109,7 +109,10 @@ class IntentRouter:
         return self._record(result)
 
     async def handle_raw(
-        self, intent_type: str, confidence: float = 1.0, payload: dict | None = None
+        self,
+        intent_type: str,
+        confidence: float = 1.0,
+        payload: dict[str, Any] | None = None,
     ) -> IntentActionResult:
         return await self.handle(
             IntentEvent(

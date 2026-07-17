@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from neural_flow_architect.core.types import (
     ActionProposal,
     FlowState,
@@ -15,7 +17,7 @@ def propose_protect(snapshot: WorldSnapshot) -> list[ActionProposal]:
     flow = snapshot.flow
     recipe = snapshot.context.recipe or "study"
     app_cat = snapshot.context.app_category or "unknown"
-    causes = [
+    causes: list[dict[str, Any]] = [
         {"signal": "module", "value": "protector"},
         {"signal": "state", "value": flow.state.value},
         {"signal": "engagement", "value": round(flow.engagement, 3)},

@@ -28,7 +28,7 @@ class EventBus:
         for handler in list(self._handlers.get(topic, [])):
             result = handler(payload)
             if asyncio.iscoroutine(result) or isinstance(result, Awaitable):
-                await result  # type: ignore[arg-type]
+                await result
 
     async def publish_many(self, events: list[tuple[str, Any]]) -> None:
         for topic, payload in events:

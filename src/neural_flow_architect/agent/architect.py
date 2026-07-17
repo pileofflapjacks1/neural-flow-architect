@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from neural_flow_architect.agent.explainer import Explainer
 from neural_flow_architect.agent.governor import Governor
@@ -29,13 +31,18 @@ from neural_flow_architect.environment.os_notifications import (
 )
 from neural_flow_architect.environment.physical import PhysicalOrchestrator
 
+ScoreBonusFn = Callable[[str], float]
+FailsafeAllowFn = Callable[[str, str], bool]
+# Accept str|Exception for failsafe hooks; return value ignored
+AgentErrorFn = Callable[[BaseException | str], Any]
+
 
 @dataclass
 class ArchitectDecision:
     mode: AgentMode
     results: list[ActionResult] = field(default_factory=list)
     explanations: list[Explanation] = field(default_factory=list)
-    precursors: list[dict] = field(default_factory=list)
+    precursors: list[dict[str, Any]] = field(default_factory=list)
 
 
 class Architect:
@@ -52,9 +59,9 @@ class Architect:
         predictive_enabled: bool = False,
         llm: LocalLLMExplainer | None = None,
         notifications: NotificationBackend | None = None,
-        score_bonus_fn=None,  # type: ignore[no-untyped-def]
-        failsafe_allow_fn=None,  # type: ignore[no-untyped-def]
-        on_agent_error=None,  # type: ignore[no-untyped-def]
+        score_bonus_fn: ScoreBonusFn | None = None,
+        failsafe_allow_fn: FailsafeAllowFn | None = None,
+        on_agent_error: AgentErrorFn | None = None,
         force_idle: bool = False,
     ) -> None:
         self.digital = digital or DigitalOrchestrator()
@@ -80,7 +87,7 @@ class Architect:
         self.undo_stack = undo_stack or UndoStack()
         self.precursors = PrecursorTracker()
         self.precursors.enabled = predictive_enabled
-        self.last_actions: list[dict] = []
+        self.last_actions: list[dict[str, Any]] = []
 
     async def step(self, snapshot: WorldSnapshot) -> ArchitectDecision:
         if self.force_idle or snapshot.preferences.agent_paused:

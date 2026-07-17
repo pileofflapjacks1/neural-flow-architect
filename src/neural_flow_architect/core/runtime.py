@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from neural_flow_architect.adapters.base import BCIAdapter
 from neural_flow_architect.adapters.registry import build_adapter
@@ -39,8 +40,8 @@ class RuntimeTick:
     decision: ArchitectDecision
     digital: dict[str, object] = field(default_factory=dict)
     quality_overall: float = 1.0
-    precursors: list[dict] = field(default_factory=list)
-    failsafe: dict = field(default_factory=dict)
+    precursors: list[dict[str, Any]] = field(default_factory=list)
+    failsafe: dict[str, Any] = field(default_factory=dict)
 
 
 OnTick = Callable[[RuntimeTick], None]
@@ -253,7 +254,7 @@ class NeuralFlowRuntime:
                     try:
                         result = self.intent_handler(event)
                         if asyncio.iscoroutine(result):
-                            await result  # type: ignore[misc]
+                            await result
                     except Exception:
                         # Intent handling must never kill the signal loop
                         pass

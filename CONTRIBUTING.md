@@ -29,7 +29,7 @@ pip install -e ".[dev]"
 pytest
 ruff check src tests
 ruff format --check src tests
-mypy src   # advisory until strict debt is cleared; CI does not block on mypy yet
+mypy src
 ```
 
 ### Pre-commit (recommended)
@@ -48,24 +48,21 @@ pip install -e ".[brainflow]"   # hardware / file boards
 
 ### CI
 
-**Local (always available):**
+**Local:**
 
 ```bash
 ./scripts/ci.sh
 # or: pre-commit install && pre-commit run --all-files
 ```
 
-| Gate | Blocking locally? |
+| Gate | Blocking? |
 |---|---|
 | `ruff check` + `ruff format --check` | Yes |
-| `pytest` | Yes |
-| `python -m build` | Yes (`scripts/ci.sh`) |
-| `mypy src` | No (advisory) |
+| `mypy src` (strict) | Yes |
+| `pytest` (3.11 + 3.12 on Actions) | Yes |
+| `python -m build` | Yes |
 
-**GitHub Actions:** workflow YAML is prepared at
-[`.github/workflows.pending/ci.yml`](.github/workflows.pending/ci.yml).
-Moving it to `.github/workflows/` requires a maintainer PAT with the
-`workflow` scope — see [`.github/workflows.pending/README.md`](.github/workflows.pending/README.md).
+**GitHub Actions:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and PR to `main`.
 
 ## Project conventions
 

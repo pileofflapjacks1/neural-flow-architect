@@ -231,8 +231,9 @@ def _brainflow_checks() -> list[CheckResult]:
         # Avoid real-time sleep in adapter for doctor speed
         runtime = NeuralFlowRuntime(settings)
         # Monkey-patch adapter realtime if file mode
-        if hasattr(runtime.adapter, "realtime"):
-            runtime.adapter.realtime = False  # type: ignore[attr-defined]
+        adapter_any: Any = runtime.adapter
+        if hasattr(adapter_any, "realtime"):
+            adapter_any.realtime = False
         ticks = asyncio.run(runtime.run(duration_sec=0.8))
         checks.append(
             CheckResult(

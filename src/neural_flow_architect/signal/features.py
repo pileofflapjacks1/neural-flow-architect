@@ -130,8 +130,8 @@ class FeatureExtractor:
         }
         if self.include_connectivity and window.shape[0] >= 2:
             # Mean absolute pairwise correlation as a crude connectivity proxy
-            corr = np.corrcoef(window)
-            if corr.size > 1:
+            corr = np.asarray(np.corrcoef(window), dtype=np.float64)
+            if corr.ndim == 2 and corr.size > 1:
                 tri = corr[np.triu_indices_from(corr, k=1)]
                 features["connectivity_mean_abs"] = float(np.mean(np.abs(tri)))
             else:

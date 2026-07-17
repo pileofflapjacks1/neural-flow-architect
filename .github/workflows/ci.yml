@@ -41,14 +41,11 @@ jobs:
       - name: Ruff format check
         run: ruff format --check src tests
 
+      - name: Mypy
+        run: mypy src
+
       - name: Pytest
         run: pytest -q --tb=short
-
-      - name: Mypy (advisory)
-        # Non-blocking until remaining strict-mode debt is cleared.
-        # Failures still show in the job log for contributors.
-        continue-on-error: true
-        run: mypy src
 
   package:
     name: Build sdist/wheel

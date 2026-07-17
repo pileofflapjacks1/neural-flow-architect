@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from neural_flow_architect.core.types import ActionProposal, FlowState, ImpactLevel, WorldSnapshot
 
 
 def propose_transition(snapshot: WorldSnapshot) -> list[ActionProposal]:
     flow = snapshot.flow
-    causes = [
+    causes: list[dict[str, Any]] = [
         {"signal": "module", "value": "transition"},
         {"signal": "state", "value": flow.state.value},
         {"signal": "engagement", "value": round(flow.engagement, 3)},

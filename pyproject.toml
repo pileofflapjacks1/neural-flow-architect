@@ -126,8 +126,7 @@ warn_return_any = true
 warn_unused_configs = true
 mypy_path = "src"
 packages = ["neural_flow_architect"]
-# Incremental: CI reports mypy but does not block merges until debt is cleared.
-# Run `mypy src` locally when touching typed public APIs.
+# Blocking in CI (`.github/workflows/ci.yml`). Run locally: `mypy src`
 
 [[tool.mypy.overrides]]
 module = [

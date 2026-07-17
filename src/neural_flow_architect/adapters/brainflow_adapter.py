@@ -15,6 +15,7 @@ import asyncio
 import time
 from collections.abc import AsyncIterator
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -80,7 +81,7 @@ class BrainFlowAdapter:
         self._file_data: np.ndarray | None = None
         self._file_pos = 0
 
-    def _import_brainflow(self) -> tuple[object, object]:
+    def _import_brainflow(self) -> tuple[Any, Any]:
         try:
             from brainflow.board_shim import BoardShim, BrainFlowInputParams
         except ImportError as exc:  # pragma: no cover - optional dep

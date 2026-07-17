@@ -30,9 +30,10 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] CLI: `nfa demo`, `nfa stream`, `nfa status`
 - [x] Unit tests for flow state machine + agent policies
 - [x] Frontend scaffold (BCI-native layout stubs)
-- [x] CI workflow on GitHub Actions (lint, format, test, package)
+- [x] CI workflow on GitHub Actions (lint, format, mypy, test, package)
 - [x] Pre-commit config committed and documented
 - [x] Local `scripts/ci.sh` mirrors Actions gates
+- [x] Mypy strict mode blocking in CI
 - [ ] First annotated public demo GIF / short video
 - [x] Issue/PR templates
 
@@ -174,9 +175,9 @@ Check items as they ship. Prefer small, reviewable PRs.
 2. ~~BrainFlow validation pack~~ done  
 3. ~~Accessibility audit pack~~ done  
 4. ~~Insights weekly recap~~ done  
-5. Clear remaining mypy strict debt (make advisory CI job blocking)  
+5. ~~mypy strict debt + blocking CI~~ done  
 6. Annotated public demo GIF / short video  
 
 ---
 
-*Last updated: Insights weekly recap — July 2026*
+*Last updated: mypy blocking CI — July 2026*

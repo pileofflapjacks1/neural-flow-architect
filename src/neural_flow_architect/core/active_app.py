@@ -63,7 +63,7 @@ def categorize_app(
     if user_map is not None:
         custom = user_map.categorize(name, fallback="")
         if custom:
-            return custom
+            return str(custom)
     if _SOCIAL.search(name):
         return "social"
     if _CREATE.search(name):

@@ -680,7 +680,10 @@ class SessionController:
         return {"ok": True, "onboarding": self.onboarding.copy_for_ui(), "state": state}
 
     async def inject_intent(
-        self, intent_type: str, confidence: float = 1.0, payload: dict | None = None
+        self,
+        intent_type: str,
+        confidence: float = 1.0,
+        payload: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Test / accessibility path: fire an intent without hardware."""
         result = await self.intent_router.handle_raw(intent_type, confidence, payload)

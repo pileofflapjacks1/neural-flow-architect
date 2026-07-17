@@ -154,7 +154,7 @@ def propose_from_precursors(
     """Map precursors to *preparatory* low-impact actions only."""
     proposals: list[ActionProposal] = []
     for ev in events:
-        causes = [
+        causes: list[dict[str, Any]] = [
             {"signal": "module", "value": "predictor"},
             {"signal": "precursor", "value": ev.kind.value},
             {"signal": "confidence", "value": round(ev.confidence, 3)},

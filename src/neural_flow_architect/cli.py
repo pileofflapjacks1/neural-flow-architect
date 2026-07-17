@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -389,7 +390,7 @@ def bench(
     _banner()
     console.print(f"[green]Latency bench[/] channels={channels} iterations={iterations}")
 
-    async def _run():
+    async def _run() -> Any:
         return await run_latency_bench(
             n_channels=channels,
             iterations=iterations,

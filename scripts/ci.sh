@@ -10,13 +10,13 @@ ruff check src tests
 echo "==> ruff format --check"
 ruff format --check src tests
 
+echo "==> mypy"
+mypy src
+
 echo "==> pytest"
 pytest -q --tb=short
-
-echo "==> mypy (advisory)"
-mypy src || echo "mypy reported issues (non-blocking in CI)"
 
 echo "==> build"
 python -m build
 
-echo "OK — local CI passed (mypy may warn)"
+echo "OK — local CI passed"
