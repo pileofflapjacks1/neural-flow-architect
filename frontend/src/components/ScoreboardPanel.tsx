@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Sparkline } from "./Sparkline";
 
 const API_BASE = import.meta.env.VITE_NFA_API ?? "http://127.0.0.1:8741";
 
@@ -18,6 +19,11 @@ type Scoreboard = {
     { sessions?: number; flow_minutes?: number; helpful_review_rate?: number }
   >;
   trust?: { trust_score?: number };
+  sparkline?: Array<{
+    session_id?: string;
+    started_at?: string;
+    score?: number;
+  }>;
 };
 
 export function ScoreboardPanel() {
@@ -65,6 +71,17 @@ export function ScoreboardPanel() {
       >
         <div style={{ width: `${pct}%` }} />
       </div>
+
+      {(sb.sparkline || []).length > 0 && (
+        <>
+          <h3>Recent sessions</h3>
+          <Sparkline
+            points={sb.sparkline || []}
+            label="Per-session policy scores (recent)"
+          />
+        </>
+      )}
+
       {sb.by_recipe && Object.keys(sb.by_recipe).length > 0 && (
         <>
           <h3>By recipe</h3>

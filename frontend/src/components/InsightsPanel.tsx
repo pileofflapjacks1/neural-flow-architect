@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { TrustPanel } from "./TrustPanel";
+import { WeeklyRecapPanel } from "./WeeklyRecapPanel";
 import { ScoreboardPanel } from "./ScoreboardPanel";
 import { TimelinePanel } from "./TimelinePanel";
 import { AppMapPanel } from "./AppMapPanel";
@@ -40,6 +41,7 @@ export function InsightsPanel({
 
   return (
     <section className="insights">
+      <WeeklyRecapPanel />
       <TrustPanel />
       <ScoreboardPanel />
       <TimelinePanel />

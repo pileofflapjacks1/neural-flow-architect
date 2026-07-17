@@ -202,8 +202,8 @@ nfa eval --duration 20 --recipe study
 nfa bench --channels 8 --iterations 40
 nfa contract --adapter simulator   # adapter golden suite
 nfa contract --adapter replay
-nfa report                         # trust + policy scoreboard
-nfa report --json                  # machine-readable scoreboard
+nfa report                         # trust + scoreboard + weekly recap
+nfa report --json --days 7         # machine-readable weekly window
 nfa soak --duration 300            # multi-minute simulated soak (fast wall clock)
 ```
 

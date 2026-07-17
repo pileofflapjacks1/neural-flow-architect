@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_NFA_API ?? "http://127.0.0.1:8741";
 
@@ -7,6 +7,15 @@ type TimelineEvent = {
   kind?: string;
   detail?: Record<string, unknown>;
 };
+
+type Filter = "all" | "state" | "action" | "undo";
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "state", label: "State" },
+  { id: "action", label: "Action" },
+  { id: "undo", label: "Undo" },
+];
 
 function formatEvent(ev: TimelineEvent): string {
   const t = typeof ev.t_sec === "number" ? `${Math.floor(ev.t_sec)}s` : "—";
@@ -31,6 +40,7 @@ export function TimelinePanel() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
 
   const load = () => {
     fetch(`${API_BASE}/timeline`)
@@ -51,6 +61,22 @@ export function TimelinePanel() {
     return () => window.clearInterval(id);
   }, []);
 
+  const filtered = useMemo(() => {
+    if (filter === "all") return events;
+    return events.filter((e) => (e.kind || "") === filter);
+  }, [events, filter]);
+
+  const counts = useMemo(() => {
+    const c = { all: events.length, state: 0, action: 0, undo: 0 };
+    for (const e of events) {
+      const k = e.kind || "";
+      if (k === "state") c.state += 1;
+      else if (k === "action") c.action += 1;
+      else if (k === "undo") c.undo += 1;
+    }
+    return c;
+  }, [events]);
+
   return (
     <section className="insights" aria-labelledby="timeline-title">
       <h2 id="timeline-title">Session timeline</h2>
@@ -58,10 +84,40 @@ export function TimelinePanel() {
         {sessionId ? `Session ${sessionId.slice(0, 8)}…` : "No session yet"}
         {live ? " · live" : " · last saved"}
       </p>
+
+      <div
+        className="preset-chips action-row"
+        role="group"
+        aria-label="Timeline filters"
+      >
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            className={
+              filter === f.id
+                ? "target-btn recipe active"
+                : "target-btn secondary recipe"
+            }
+            aria-pressed={filter === f.id}
+            onClick={() => setFilter(f.id)}
+          >
+            {f.label}
+            <span className="dim"> ({counts[f.id]})</span>
+          </button>
+        ))}
+      </div>
+
       {error && <p className="explanation">{error}</p>}
       <ul className="timeline-list exp-list" aria-live="polite">
-        {events.length === 0 && <li>No events yet — start a session.</li>}
-        {events
+        {filtered.length === 0 && (
+          <li>
+            {events.length === 0
+              ? "No events yet — start a session."
+              : `No ${filter} events in this session.`}
+          </li>
+        )}
+        {filtered
           .slice()
           .reverse()
           .slice(0, 40)

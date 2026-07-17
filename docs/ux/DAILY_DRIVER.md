@@ -47,18 +47,26 @@ When you **Stop session**, a short review asks if the block (and co-pilot) helpe
 
 Reviews also feed the personal flow signature (`GET /signature`).
 
-## Policy scoreboard & timeline
+## Policy scoreboard, weekly recap & timeline
 
 Open **Insights** (full mode) for:
 
 | Panel | Source |
 |---|---|
-| Policy scoreboard | `GET /scoreboard` — undos, block reviews, trust → 0–100 |
-| Session timeline | `GET /timeline` — state changes, tools, undos |
+| **This week** | `GET /weekly?days=7` — window chips 7/14/30d, sparkline, highlights |
+| Policy scoreboard | `GET /scoreboard` — undos, block reviews, trust → 0–100 + recent sparkline |
+| Session timeline | `GET /timeline` — filter chips: All / State / Action / Undo |
 | App → category map | `GET/POST /app_map` — local JSON overrides for active-app recipes |
 | OS Focus / DND | `GET/POST /os_focus` — dry-run default; live only when enabled |
 
-CLI: `nfa report` and `nfa report --json` (no raw neural data).
+CLI:
+
+```bash
+nfa report                 # trust + scoreboard + this-week highlights
+nfa report --json --days 14
+```
+
+No raw neural data in reports.
 
 ## Accessibility
 

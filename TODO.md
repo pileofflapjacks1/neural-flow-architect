@@ -68,6 +68,7 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] OS Focus / DND hooks (dry-run default; Shortcuts / gsettings stubs)
 - [x] Policy scoreboard (`GET /scoreboard`, Insights UI)
 - [x] Session timeline (state/action/undo) API + UI
+- [x] Weekly recap (`GET /weekly`) + sparkline + timeline filter chips
 - [x] Quality metrics (clip/flat/noise/dropout heuristics + overall score)
 - [x] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
 - [x] Optional connectivity feature flag (`include_connectivity`)
@@ -172,10 +173,10 @@ Check items as they ship. Prefer small, reviewable PRs.
 1. ~~Wire GitHub Actions CI~~ done  
 2. ~~BrainFlow validation pack~~ done  
 3. ~~Accessibility audit pack~~ done  
-4. Clear remaining mypy strict debt (make advisory CI job blocking)  
-5. Annotated public demo GIF / short video  
-6. Timeline filter chips / scoreboard sparklines (Insights polish)  
+4. ~~Insights weekly recap~~ done  
+5. Clear remaining mypy strict debt (make advisory CI job blocking)  
+6. Annotated public demo GIF / short video  
 
 ---
 
-*Last updated: A11y audit pack — July 2026*
+*Last updated: Insights weekly recap — July 2026*

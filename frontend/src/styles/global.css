@@ -581,6 +581,40 @@ html.nfa-reduced-motion .dwell-fill {
   transition: none;
 }
 
+/* Weekly recap sparkline */
+.sparkline-wrap {
+  width: 100%;
+  max-width: 360px;
+  margin: 0.5rem 0 1rem;
+}
+.sparkline {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #121722;
+  border-radius: 12px;
+  border: 1px solid #2a3348;
+}
+.sparkline-path {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.sparkline-dot {
+  fill: var(--good);
+}
+.sparkline-axis {
+  stroke: #2a3348;
+  stroke-width: 1;
+}
+.sparkline-caption {
+  margin-top: 0.35rem;
+}
+.weekly-recap h3 {
+  margin-top: 1rem;
+}
+
 /* Keyboard map + a11y presets */
 .keymap-table {
   width: 100%;

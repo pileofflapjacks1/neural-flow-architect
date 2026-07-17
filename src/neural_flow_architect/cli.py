@@ -111,8 +111,9 @@ def soak(
 def report(
     data_dir: str | None = typer.Option(None, help="Override data directory"),
     as_json: bool = typer.Option(False, "--json", help="Machine-readable JSON output"),
+    days: int = typer.Option(7, "--days", help="Weekly recap window in days"),
 ) -> None:
-    """Print local trust + policy scoreboard (no raw neural data)."""
+    """Print local trust, policy scoreboard, and weekly recap (no raw neural data)."""
     import json as json_lib
     from pathlib import Path
 
@@ -124,10 +125,12 @@ def report(
     session = SessionController(settings)
     trust = session.trust_metrics()
     scoreboard = session.policy_scoreboard()
+    weekly = session.weekly_recap(days=days)
     sessions = session.list_sessions()
     payload = {
         "trust": trust.get("trust"),
         "scoreboard": scoreboard,
+        "weekly": weekly,
         "sessions_on_disk": len(sessions),
         "iot": trust.get("iot"),
         "os_focus": session.runtime.os_focus.status(),
@@ -155,6 +158,14 @@ def report(
     console.print(table)
     sb = scoreboard
     console.print(f"[cyan]Policy score:[/] {sb.get('score')} — {sb.get('interpretation')}")
+    console.print(
+        f"[cyan]This week ({weekly.get('window_days')}d):[/] "
+        f"sessions={weekly.get('sessions')} score={weekly.get('score')} "
+        f"trend={weekly.get('trend')} "
+        f"flow_min={(weekly.get('totals') or {}).get('flow_minutes')}"
+    )
+    for h in (weekly.get("highlights") or [])[:4]:
+        console.print(f"  · {h}")
     console.print(f"[dim]Sessions on disk: {len(sessions)}[/]")
     if sessions:
         s0 = sessions[0]

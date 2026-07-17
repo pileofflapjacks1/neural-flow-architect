@@ -27,7 +27,10 @@ from neural_flow_architect.core.types import (
 )
 from neural_flow_architect.environment.recipes import apply_recipe, list_recipes
 from neural_flow_architect.insights.coaching import build_coaching_notes
-from neural_flow_architect.insights.scoreboard import build_policy_scoreboard
+from neural_flow_architect.insights.scoreboard import (
+    build_policy_scoreboard,
+    build_weekly_recap,
+)
 from neural_flow_architect.personalization.feedback import FeedbackStore
 from neural_flow_architect.personalization.learning import (
     learn_from_block_review,
@@ -933,6 +936,11 @@ class SessionController:
         sessions = self.list_sessions(limit=50)
         fb = self.feedback.as_dict().get("history") or []
         return build_policy_scoreboard(sessions, feedback_history=fb)
+
+    def weekly_recap(self, *, days: int = 7) -> dict[str, Any]:
+        sessions = self.list_sessions(limit=80)
+        fb = self.feedback.as_dict().get("history") or []
+        return build_weekly_recap(sessions, days=days, feedback_history=fb)
 
     def get_app_map(self) -> dict[str, Any]:
         return self.app_map.to_dict()

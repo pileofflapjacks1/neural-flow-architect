@@ -315,6 +315,12 @@ def create_app(
     async def scoreboard() -> dict[str, Any]:
         return {"ok": True, "scoreboard": session.policy_scoreboard()}
 
+    @app.get("/weekly")
+    async def weekly_recap(days: int = 7) -> dict[str, Any]:
+        """Local weekly (or N-day) recap with sparkline — no raw neural data."""
+        days = max(1, min(days, 90))
+        return {"ok": True, "recap": session.weekly_recap(days=days)}
+
     @app.get("/timeline")
     async def timeline(session_id: str | None = None) -> dict[str, Any]:
         return session.session_timeline(session_id)
