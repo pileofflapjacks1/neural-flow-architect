@@ -34,6 +34,14 @@ export type NfaState = {
   precursors?: Array<Record<string, unknown>>;
   predictive_enabled?: boolean;
   llm_enabled?: boolean;
+  simple_mode?: boolean;
+  active_preset?: string | null;
+  onboarding_completed?: boolean;
+  last_intent?: {
+    type?: string;
+    confidence?: number;
+    result?: Record<string, unknown>;
+  } | null;
   preferences?: Record<string, unknown>;
   context?: Record<string, unknown>;
   ts?: string;
@@ -56,6 +64,8 @@ const defaultState: NfaState = {
   session: null,
   adapter: "simulator",
   signal: "idle",
+  simple_mode: true,
+  onboarding_completed: true,
 };
 
 async function post(path: string, body?: unknown) {
@@ -75,6 +85,13 @@ export function useNfaSession() {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+
+  const refresh = useCallback(() => {
+    fetch(`${API_BASE}/state`)
+      .then((r) => r.json())
+      .then((data) => setState((s) => ({ ...s, ...data })))
+      .catch(() => setError("API unreachable — run `nfa start` on port 8741"));
+  }, []);
 
   useEffect(() => {
     let closed = false;
@@ -108,23 +125,19 @@ export function useNfaSession() {
         }
       };
       ws.onerror = () => {
-        setError("WebSocket error — is `nfa serve` running?");
+        setError("WebSocket error — is `nfa start` running?");
       };
     };
 
     connect();
-    // also seed via REST
-    fetch(`${API_BASE}/state`)
-      .then((r) => r.json())
-      .then((data) => setState((s) => ({ ...s, ...data })))
-      .catch(() => setError("API unreachable — run `nfa serve` on port 8741"));
+    refresh();
 
     return () => {
       closed = true;
       if (retry) window.clearTimeout(retry);
       wsRef.current?.close();
     };
-  }, []);
+  }, [refresh]);
 
   const start = useCallback(async (adapter?: string) => {
     setError(null);
@@ -210,6 +223,15 @@ export function useNfaSession() {
     }
   }, []);
 
+  const setSimpleMode = useCallback(async (enabled: boolean) => {
+    try {
+      const res = await post("/ui/simple_mode", { enabled });
+      if (res.state) setState((s) => ({ ...s, ...res.state }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "simple mode failed");
+    }
+  }, []);
+
   return {
     state,
     connected,
@@ -224,5 +246,7 @@ export function useNfaSession() {
     toolPref,
     setRecipe,
     setPredictive,
+    setSimpleMode,
+    refresh,
   };
 }

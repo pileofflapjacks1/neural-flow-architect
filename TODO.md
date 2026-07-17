@@ -98,6 +98,10 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Low-latency path profiling (`nfa bench` + LATENCY_BUDGET.md); zero-copy later
 - [ ] Clinical/research partnership documentation (no PHI in public repo)
 - [x] Advanced predictive tools under strict consent + opt-in flag (heuristic v0)
+- [x] Stable intent vocabulary + IntentRouter (pause/undo/rest/recipe/labels)
+- [x] neuralink_stub cycles control intents for practice
+- [x] Daily presets + first-run onboarding + Simple mode UI
+- [x] `nfa start` / `nfa doctor` easy path + user/caregiver docs
 
 ---
 

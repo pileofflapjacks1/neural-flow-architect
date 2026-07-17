@@ -1,4 +1,4 @@
-"""Closed-loop runtime: adapter → features → flow → architect."""
+"""Closed-loop runtime: adapter → features → flow → architect (+ intents)."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from neural_flow_architect.core.types import (
     AgentMode,
     ContextSnapshot,
     FlowEstimate,
+    IntentEvent,
     UserPreferences,
     WorldSnapshot,
 )
@@ -40,6 +41,7 @@ class RuntimeTick:
 
 
 OnTick = Callable[[RuntimeTick], None]
+OnIntent = Callable[[IntentEvent], None]
 
 
 class NeuralFlowRuntime:
@@ -52,6 +54,7 @@ class NeuralFlowRuntime:
         undo_stack: UndoStack | None = None,
         preferences_provider: Callable[[], UserPreferences] | None = None,
         context_provider: Callable[[], ContextSnapshot] | None = None,
+        intent_handler: Callable[[IntentEvent], None] | None = None,
     ) -> None:
         self.settings = settings or get_settings()
         self.settings.ensure_data_dirs()
@@ -102,10 +105,13 @@ class NeuralFlowRuntime:
         self.insights = InsightsStore(self.settings.data_dir / "sessions")
         self.preferences_provider = preferences_provider
         self.context_provider = context_provider
+        self.intent_handler = intent_handler
         self._running = False
+        self._intent_task: asyncio.Task[None] | None = None
         self.last_flow: FlowEstimate | None = None
         self.last_decision: ArchitectDecision | None = None
         self.last_quality_overall: float = 1.0
+        self.last_intent: IntentEvent | None = None
         self.context = ContextSnapshot(user_goal="deep work", recipe="study")
 
     async def run(
@@ -124,6 +130,17 @@ class NeuralFlowRuntime:
         ticks: list[RuntimeTick] = []
         loop = asyncio.get_running_loop()
         started = loop.time()
+
+        # Parallel intent stream (Neuralink-ready control path)
+        intent_iter = None
+        try:
+            intent_iter = self.adapter.intents()
+        except Exception:
+            intent_iter = None
+        if intent_iter is not None:
+            self._intent_task = asyncio.create_task(
+                self._consume_intents(intent_iter), name="nfa-intents"
+            )
 
         try:
             async for frame in self.adapter.stream():
@@ -151,11 +168,37 @@ class NeuralFlowRuntime:
                         on_tick(tick)
         finally:
             self._running = False
+            if self._intent_task is not None:
+                self._intent_task.cancel()
+                try:
+                    await self._intent_task
+                except asyncio.CancelledError:
+                    pass
+                self._intent_task = None
             await self.adapter.disconnect()
             persist = self.consent.allows(ConsentScope.PERSIST_FEATURES)
             self.insights.end_session(persist=persist)
 
         return ticks
+
+    async def _consume_intents(self, intent_iter: AsyncIterator[IntentEvent]) -> None:
+        try:
+            async for event in intent_iter:
+                if not self._running:
+                    break
+                self.last_intent = event
+                if self.intent_handler is not None:
+                    try:
+                        result = self.intent_handler(event)
+                        if asyncio.iscoroutine(result):
+                            await result  # type: ignore[misc]
+                    except Exception:
+                        # Intent handling must never kill the signal loop
+                        pass
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            return
 
     def _current_preferences(self) -> UserPreferences:
         if self.preferences_provider is not None:
@@ -174,8 +217,6 @@ class NeuralFlowRuntime:
         if not self.consent.allows(ConsentScope.AGENT_ACT):
             return ArchitectDecision(mode=AgentMode.IDLE)
 
-        # Graceful degradation: block medium/high impact via low quality in select_mode
-        # and by elevating idle when quality is unusable
         prefs = self._current_preferences()
         ctx = self._current_context()
         self.context = ctx

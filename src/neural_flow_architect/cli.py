@@ -79,6 +79,79 @@ def status() -> None:
 
 
 @app.command()
+def doctor() -> None:
+    """Check install health (Python, deps, data dir, privacy defaults)."""
+    from neural_flow_architect.core.doctor import run_doctor
+
+    _banner()
+    report = run_doctor()
+    table = Table(title="Doctor", show_header=True, header_style="bold")
+    table.add_column("Check")
+    table.add_column("OK")
+    table.add_column("Detail")
+    for c in report.checks:
+        table.add_row(c.name, "✓" if c.ok else "✗", c.detail)
+    console.print(table)
+    if report.ok:
+        console.print("[green]All checks passed.[/] Next: [bold]nfa start[/]")
+    else:
+        console.print("[yellow]Some checks failed.[/] See docs/ux/USER_GUIDE.md")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def start(
+    adapter: str = typer.Option("simulator", help="simulator|replay|neuralink_stub|brainflow"),
+    host: Optional[str] = typer.Option(None, help="API host"),
+    port: Optional[int] = typer.Option(None, help="API port"),
+    open_browser: bool = typer.Option(False, "--open/--no-open", help="Open companion UI URL"),
+) -> None:
+    """
+    Easy daily launcher: local API + clear next steps for BCI users/caregivers.
+    """
+    import uvicorn
+
+    from neural_flow_architect.api.server import create_app
+
+    settings = get_settings()
+    settings.adapter = adapter  # type: ignore[assignment]
+    if host:
+        settings.api_host = host
+    if port:
+        settings.api_port = port
+
+    _banner()
+    console.print(
+        Panel(
+            "[bold]Easy start for daily use[/]\n\n"
+            f"1. API is starting at [cyan]http://{settings.api_host}:{settings.api_port}[/]\n"
+            "2. In another terminal: [cyan]cd frontend && npm run dev[/]\n"
+            "3. Open [cyan]http://127.0.0.1:5173[/]\n"
+            "4. Complete onboarding → pick a preset → Start session\n\n"
+            "[dim]Always available: Pause · Undo · Rest[/]\n"
+            "[dim]User guide: docs/ux/USER_GUIDE.md · Caregiver: docs/ux/CAREGIVER_SETUP.md[/]\n"
+            "[dim]Not a medical device. Local-first by default.[/]",
+            border_style="green",
+            title="Neural Flow Architect",
+        )
+    )
+    console.print(f"[green]Adapter:[/] {settings.adapter}")
+    if open_browser:
+        import webbrowser
+
+        webbrowser.open(f"http://{settings.api_host}:{settings.api_port}/health")
+        webbrowser.open("http://127.0.0.1:5173")
+
+    app_instance = create_app(settings)
+    uvicorn.run(
+        app_instance,
+        host=settings.api_host,
+        port=settings.api_port,
+        log_level=settings.log_level.lower(),
+    )
+
+
+@app.command()
 def demo(
     duration: float = typer.Option(20.0, help="Seconds to run"),
     dry_run: bool = typer.Option(False, help="Do not apply effector side effects"),

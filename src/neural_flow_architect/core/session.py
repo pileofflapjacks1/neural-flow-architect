@@ -9,12 +9,15 @@ from typing import Any
 
 from neural_flow_architect.agent.undo import UndoStack
 from neural_flow_architect.core.context import enrich_context
+from neural_flow_architect.core.intents import IntentRouter
+from neural_flow_architect.core.onboarding import OnboardingState
 from neural_flow_architect.core.runtime import NeuralFlowRuntime, RuntimeTick
 from neural_flow_architect.core.settings import Settings, get_settings
 from neural_flow_architect.core.types import (
     AgentMode,
     ContextSnapshot,
     FlowState,
+    IntentEvent,
     UserPreferences,
 )
 from neural_flow_architect.environment.recipes import apply_recipe, list_recipes
@@ -23,6 +26,7 @@ from neural_flow_architect.personalization.learning import (
     learn_from_session_summary,
     update_thresholds_from_label,
 )
+from neural_flow_architect.personalization.presets import get_preset, list_presets
 from neural_flow_architect.personalization.profile import UserProfile
 from neural_flow_architect.privacy.consent import ConsentScope
 
@@ -45,11 +49,16 @@ class SessionController:
         self._recipe = self.profile.preferences.preferred_recipe or "study"
         self._active_app: str | None = None
         self._user_goal: str | None = None
+        self.onboarding = OnboardingState.load(
+            self.settings.data_dir / "profiles" / "onboarding.json"
+        )
+        self.intent_router = IntentRouter(self, min_confidence=0.5)
         self.runtime = self._new_runtime()
         self._task: asyncio.Task[list[RuntimeTick]] | None = None
         self._listeners: list[asyncio.Queue[dict[str, Any]]] = []
         self._latest: dict[str, Any] = self._idle_state()
         self._lock = asyncio.Lock()
+        self._last_intent_result: dict[str, Any] | None = None
 
     def _new_runtime(self) -> NeuralFlowRuntime:
         rt = NeuralFlowRuntime(
@@ -57,10 +66,32 @@ class SessionController:
             undo_stack=self.undo_stack,
             preferences_provider=self.preferences_for_runtime,
             context_provider=self.context_for_runtime,
+            intent_handler=self._on_intent_event,
         )
         rt.flow.protect_t = self.profile.protect_engagement_threshold
         rt.flow.deep_t = self.profile.deep_flow_engagement_threshold
         return rt
+
+    def _on_intent_event(self, event: IntentEvent) -> Any:
+        """Called from runtime intent task — schedule async route safely."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return None
+
+        async def _run() -> None:
+            result = await self.intent_router.handle(event)
+            self._last_intent_result = result.to_dict()
+            state = self.get_state()
+            state["last_intent"] = {
+                "type": event.intent_type,
+                "confidence": event.confidence,
+                "result": self._last_intent_result,
+            }
+            self._publish(state)
+
+        loop.create_task(_run())
+        return None
 
     def context_for_runtime(self) -> ContextSnapshot:
         return enrich_context(
@@ -110,6 +141,15 @@ class SessionController:
             "predictive_enabled": self.settings.predictive_enabled,
             "llm_enabled": self.settings.llm_enabled
             or self.settings.agent_mode == "llm_local",
+            "simple_mode": self.profile.preferences.simple_mode,
+            "active_preset": self.profile.preferences.active_preset,
+            "onboarding_completed": self.onboarding.completed,
+            "last_intent": None,
+            "help": {
+                "user_guide": "docs/ux/USER_GUIDE.md",
+                "pause": "Pause always stops proactive actions",
+                "undo": "Undo reverses the last environment change",
+            },
             "ts": datetime.utcnow().isoformat(),
         }
 
@@ -270,9 +310,93 @@ class SessionController:
             "predictive_enabled": self.settings.predictive_enabled,
             "llm_enabled": self.settings.llm_enabled
             or self.settings.agent_mode == "llm_local",
+            "simple_mode": self.profile.preferences.simple_mode,
+            "active_preset": self.profile.preferences.active_preset,
+            "onboarding_completed": self.onboarding.completed,
+            "last_intent": self._latest.get("last_intent"),
+            "help": self._idle_state()["help"],
             "ts": datetime.utcnow().isoformat(),
         }
         self._publish(state)
+
+    def set_simple_mode(self, enabled: bool) -> dict[str, Any]:
+        self.profile.preferences.simple_mode = enabled
+        self.profile.save(self.settings.data_dir / "profiles")
+        self.onboarding.simple_mode = enabled
+        self.onboarding.save(self.settings.data_dir / "profiles" / "onboarding.json")
+        state = self.get_state()
+        state["simple_mode"] = enabled
+        self._publish(state)
+        return {"ok": True, "simple_mode": enabled, "state": state}
+
+    def apply_preset(self, preset_id: str) -> dict[str, Any]:
+        custom = self.settings.data_dir / "presets"
+        preset = get_preset(preset_id, custom)
+        if preset is None:
+            return {"ok": False, "message": f"Unknown preset {preset_id}", "presets": list_presets(custom)}
+        self.set_recipe(preset.recipe)
+        self._user_goal = preset.user_goal
+        self.profile.preferences.active_preset = preset.id
+        self.profile.preferences.simple_mode = preset.simple_mode
+        self.profile.preferences.preferred_recipe = preset.recipe
+        self.set_predictive(preset.predictive_enabled)
+        if preset.agent_paused:
+            self.set_paused(True)
+        else:
+            # Do not force-resume if user had paused for safety — only clear if preset says not paused
+            if self.profile.preferences.agent_paused and not preset.agent_paused:
+                self.set_paused(False)
+        self.profile.save(self.settings.data_dir / "profiles")
+        self.onboarding.chosen_preset = preset.id
+        self.onboarding.simple_mode = preset.simple_mode
+        self.onboarding.save(self.settings.data_dir / "profiles" / "onboarding.json")
+        state = self.get_state()
+        state["active_preset"] = preset.id
+        state["simple_mode"] = preset.simple_mode
+        state["context"] = self.context_for_runtime().model_dump()
+        self._publish(state)
+        return {"ok": True, "preset": preset.to_dict(), "state": state}
+
+    def get_onboarding(self) -> dict[str, Any]:
+        return self.onboarding.copy_for_ui()
+
+    def advance_onboarding(
+        self,
+        *,
+        step: str | None = None,
+        caregiver_assisted: bool | None = None,
+        complete: bool = False,
+    ) -> dict[str, Any]:
+        if caregiver_assisted is not None:
+            self.onboarding.caregiver_assisted = caregiver_assisted
+        if complete:
+            self.onboarding.current_step = "ready"
+            self.onboarding.completed = True
+            if "ready" not in self.onboarding.completed_steps:
+                self.onboarding.completed_steps.append("ready")
+        else:
+            self.onboarding.advance(step)
+        self.onboarding.simple_mode = self.profile.preferences.simple_mode
+        self.onboarding.save(self.settings.data_dir / "profiles" / "onboarding.json")
+        state = self.get_state()
+        state["onboarding_completed"] = self.onboarding.completed
+        self._publish(state)
+        return {"ok": True, "onboarding": self.onboarding.copy_for_ui(), "state": state}
+
+    async def inject_intent(
+        self, intent_type: str, confidence: float = 1.0, payload: dict | None = None
+    ) -> dict[str, Any]:
+        """Test / accessibility path: fire an intent without hardware."""
+        result = await self.intent_router.handle_raw(intent_type, confidence, payload)
+        self._last_intent_result = result.to_dict()
+        state = self.get_state()
+        state["last_intent"] = {
+            "type": intent_type,
+            "confidence": confidence,
+            "result": self._last_intent_result,
+        }
+        self._publish(state)
+        return {"ok": result.ok, "result": result.to_dict(), "state": state}
 
     def set_predictive(self, enabled: bool) -> dict[str, Any]:
         self.settings.predictive_enabled = enabled

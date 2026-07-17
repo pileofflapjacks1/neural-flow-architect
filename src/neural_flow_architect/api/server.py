@@ -47,6 +47,26 @@ class PredictiveBody(BaseModel):
     enabled: bool = True
 
 
+class SimpleModeBody(BaseModel):
+    enabled: bool = True
+
+
+class PresetBody(BaseModel):
+    preset_id: str
+
+
+class OnboardingBody(BaseModel):
+    step: str | None = None
+    caregiver_assisted: bool | None = None
+    complete: bool = False
+
+
+class IntentBody(BaseModel):
+    intent_type: str
+    confidence: float = 1.0
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
 def create_app(
     settings: Settings | None = None,
     controller: SessionController | None = None,
@@ -171,6 +191,48 @@ def create_app(
     async def set_predictive(body: PredictiveBody) -> dict[str, Any]:
         return session.set_predictive(body.enabled)
 
+    @app.post("/ui/simple_mode")
+    async def simple_mode(body: SimpleModeBody) -> dict[str, Any]:
+        return session.set_simple_mode(body.enabled)
+
+    @app.get("/presets")
+    async def presets() -> dict[str, Any]:
+        from neural_flow_architect.personalization.presets import list_presets
+
+        return {"presets": list_presets(settings.data_dir / "presets")}
+
+    @app.post("/presets/apply")
+    async def apply_preset(body: PresetBody) -> dict[str, Any]:
+        return session.apply_preset(body.preset_id)
+
+    @app.get("/onboarding")
+    async def get_onboarding() -> dict[str, Any]:
+        return session.get_onboarding()
+
+    @app.post("/onboarding")
+    async def post_onboarding(body: OnboardingBody) -> dict[str, Any]:
+        return session.advance_onboarding(
+            step=body.step,
+            caregiver_assisted=body.caregiver_assisted,
+            complete=body.complete,
+        )
+
+    @app.post("/intent")
+    async def post_intent(body: IntentBody) -> dict[str, Any]:
+        """Inject a discrete BCI-style intent (also used for accessibility testing)."""
+        return await session.inject_intent(
+            body.intent_type, body.confidence, body.payload
+        )
+
+    @app.get("/intents/vocabulary")
+    async def intent_vocab() -> dict[str, Any]:
+        from neural_flow_architect.core.intents import KNOWN_INTENTS
+
+        return {
+            "intents": sorted(KNOWN_INTENTS),
+            "note": "Stable control vocabulary for future implant intent APIs",
+        }
+
     @app.get("/features")
     async def feature_flags() -> dict[str, Any]:
         return {
@@ -180,6 +242,8 @@ def create_app(
             "iot_enabled": settings.iot_enabled,
             "local_only": settings.local_only,
             "allow_cloud_llm": settings.allow_cloud_llm,
+            "simple_mode": session.profile.preferences.simple_mode,
+            "intent_control": True,
         }
 
     @app.websocket("/ws/state")

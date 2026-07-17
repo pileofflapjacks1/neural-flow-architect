@@ -21,9 +21,19 @@ from neural_flow_architect.core.types import (
     StreamMetadata,
 )
 
+# Demo cycle of control intents a future implant user might trigger
+_DEMO_INTENT_CYCLE = (
+    "pause_agent",
+    "resume_agent",
+    "recipe_study",
+    "undo",
+    "rest_mode",
+    "label_flow_yes",
+)
+
 
 class NeuralinkStubAdapter:
-    """High-channel synthetic feature frames + occasional intent events."""
+    """High-channel synthetic feature frames + cycling control intents."""
 
     name = "neuralink_stub"
 
@@ -33,13 +43,18 @@ class NeuralinkStubAdapter:
         sample_rate_hz: float = 200.0,
         chunk_samples: int = 20,
         seed: int = 7,
+        intent_interval_sec: float = 12.0,
+        intent_confidence: float = 0.85,
     ) -> None:
         self.n_channels = n_channels
         self.sample_rate_hz = sample_rate_hz
         self.chunk_samples = chunk_samples
+        self.intent_interval_sec = intent_interval_sec
+        self.intent_confidence = intent_confidence
         self._rng = np.random.default_rng(seed)
         self._seq = 0
         self._intent_seq = 0
+        self._intent_idx = 0
         self._connected = False
         self._meta = StreamMetadata(
             source_kind=SourceKind.INTRACORTICAL,
@@ -75,14 +90,18 @@ class NeuralinkStubAdapter:
 
     async def _intent_stream(self) -> AsyncIterator[IntentEvent]:
         while self._connected:
-            await asyncio.sleep(15.0)
+            await asyncio.sleep(self.intent_interval_sec)
+            if not self._connected:
+                break
+            intent_type = _DEMO_INTENT_CYCLE[self._intent_idx % len(_DEMO_INTENT_CYCLE)]
+            self._intent_idx += 1
             self._intent_seq += 1
             yield IntentEvent(
                 seq=self._intent_seq,
                 timestamp_ns=time.time_ns(),
-                intent_type="pause_agent",
-                payload={"source": "stub_demo"},
-                confidence=0.4,
+                intent_type=intent_type,
+                payload={"source": "neuralink_stub_demo"},
+                confidence=self.intent_confidence,
             )
 
     def stream(self) -> AsyncIterator[NeuralFrame]:
@@ -93,7 +112,6 @@ class NeuralinkStubAdapter:
             await self.connect()
         dt = self.chunk_samples / self.sample_rate_hz
         while self._connected:
-            # Sparse-ish population activity proxy
             data = self._rng.normal(0.0, 0.1, size=(self.n_channels, self.chunk_samples))
             active = self._rng.random(self.n_channels) < 0.05
             data[active] += self._rng.normal(0.0, 1.0, size=(active.sum(), self.chunk_samples))

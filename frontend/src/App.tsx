@@ -5,22 +5,24 @@ import { OverrideBar } from "./components/OverrideBar";
 import { InsightsPanel } from "./components/InsightsPanel";
 import { RecipePicker } from "./components/RecipePicker";
 import { CoachingPanel } from "./components/CoachingPanel";
+import { Onboarding } from "./components/Onboarding";
+import { PresetPicker } from "./components/PresetPicker";
 import { useNfaSession } from "./hooks/useNfaSession";
 
 function architectLabel(mode: string, paused: boolean, running: boolean): string {
-  if (!running) return "Idle — start a session";
-  if (paused) return "Paused";
+  if (!running) return "Ready — start when you want";
+  if (paused) return "Paused — you are in control";
   switch (mode) {
     case "protect":
-      return "Protecting focus";
+      return "Protecting your focus";
     case "re_enter":
-      return "Helping re-entry";
+      return "Helping you re-enter";
     case "transition":
-      return "Supporting transition";
+      return "Easing transition";
     case "idle_degraded":
-      return "Idle (signal degraded)";
+      return "Waiting (signal weak)";
     default:
-      return "Monitoring";
+      return "Monitoring quietly";
   }
 }
 
@@ -38,44 +40,72 @@ export function App() {
     toolPref,
     setRecipe,
     setPredictive,
+    setSimpleMode,
+    refresh,
   } = useNfaSession();
   const [showWhy, setShowWhy] = useState(false);
   const [tab, setTab] = useState<"live" | "insights" | "coaching">("live");
+  const [onboardingDone, setOnboardingDone] = useState(false);
 
+  const simple = state.simple_mode !== false;
   const explanationText =
     state.explanation?.text ??
     (state.running
-      ? "No proactive action yet — Architect is monitoring."
-      : "Start a session to stream estimated flow-related state.");
+      ? "No change yet — Architect is watching quietly."
+      : "Start a session when ready. Pause and Undo always work.");
 
   const because = (state.explanation?.because as Array<Record<string, unknown>>) ?? [];
   const recipe = state.recipe ?? "study";
+  const showOnboarding = !onboardingDone && state.onboarding_completed === false;
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${simple ? "simple" : ""}`}>
       <a className="skip-link" href="#main">
         Skip to main content
       </a>
+
       <header className="top-bar">
-        <h1>Neural Flow Architect</h1>
-        <p className="signal-chip" aria-live="polite">
-          {connected ? `Signal ${state.signal}` : "Disconnected"}
-          {state.running ? " · live" : ""}
-          {" · "}
-          {state.adapter}
-          {state.quality?.overall != null
-            ? ` · q=${Number(state.quality.overall).toFixed(2)}`
-            : ""}
-        </p>
+        <div>
+          <h1>Neural Flow Architect</h1>
+          <p className="signal-chip" aria-live="polite">
+            {connected ? `Signal ${state.signal}` : "Connecting…"}
+            {state.running ? " · live" : " · idle"}
+            {simple ? " · simple mode" : " · full mode"}
+          </p>
+        </div>
         <OverrideBar
           paused={state.agent_paused}
           onToggle={() => setPaused(!state.agent_paused)}
         />
       </header>
 
+      {/* Always-visible emergency controls */}
+      <div className="sticky-controls" role="toolbar" aria-label="Primary controls">
+        <button
+          type="button"
+          className="target-btn override"
+          onClick={() => setPaused(!state.agent_paused)}
+          aria-pressed={state.agent_paused}
+        >
+          {state.agent_paused ? "Resume" : "Pause"}
+        </button>
+        <button
+          type="button"
+          className="target-btn"
+          onClick={() => undo()}
+          disabled={!state.can_undo}
+        >
+          Undo
+        </button>
+        <button type="button" className="target-btn secondary" onClick={() => restMode()}>
+          Rest
+        </button>
+      </div>
+
       {error && (
         <div className="banner warn" role="alert">
           {error}
+          <p className="meta-line">Tip: run <code>nfa start</code> in a terminal.</p>
         </div>
       )}
 
@@ -85,152 +115,197 @@ export function App() {
         </div>
       )}
 
-      <nav className="tabs" aria-label="Primary">
-        <button
-          type="button"
-          className={tab === "live" ? "tab active" : "tab"}
-          onClick={() => setTab("live")}
-        >
-          Live
-        </button>
-        <button
-          type="button"
-          className={tab === "insights" ? "tab active" : "tab"}
-          onClick={() => setTab("insights")}
-        >
-          Insights
-        </button>
-        <button
-          type="button"
-          className={tab === "coaching" ? "tab active" : "tab"}
-          onClick={() => setTab("coaching")}
-        >
-          Coaching
-        </button>
-      </nav>
+      {state.last_intent?.type && (
+        <div className="banner info" role="status">
+          Intent: {String(state.last_intent.type)}
+          {state.last_intent.result
+            ? ` — ${String((state.last_intent.result as { message?: string }).message ?? "")}`
+            : ""}
+        </div>
+      )}
 
-      <main id="main" className="main-panel">
-        {tab === "live" && (
-          <>
-            <div className="session-controls action-row">
-              {!state.running ? (
-                <>
-                  <button
-                    type="button"
-                    className="target-btn"
-                    onClick={() => start("simulator")}
-                  >
-                    Start simulator
-                  </button>
+      {showOnboarding ? (
+        <main id="main" className="main-panel">
+          <Onboarding
+            onDone={() => {
+              setOnboardingDone(true);
+              refresh();
+            }}
+          />
+        </main>
+      ) : (
+        <>
+          {!simple && (
+            <nav className="tabs" aria-label="Primary">
+              <button
+                type="button"
+                className={tab === "live" ? "tab active" : "tab"}
+                onClick={() => setTab("live")}
+              >
+                Live
+              </button>
+              <button
+                type="button"
+                className={tab === "insights" ? "tab active" : "tab"}
+                onClick={() => setTab("insights")}
+              >
+                Insights
+              </button>
+              <button
+                type="button"
+                className={tab === "coaching" ? "tab active" : "tab"}
+                onClick={() => setTab("coaching")}
+              >
+                Coaching
+              </button>
+            </nav>
+          )}
+
+          <main id="main" className="main-panel">
+            {(simple || tab === "live") && (
+              <>
+                <PresetPicker
+                  activeId={state.active_preset}
+                  onApplied={() => refresh()}
+                />
+
+                <div className="session-controls action-row">
+                  {!state.running ? (
+                    <button
+                      type="button"
+                      className="target-btn target-xl"
+                      onClick={() => start("simulator")}
+                    >
+                      Start session
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="target-btn secondary target-xl"
+                      onClick={() => stop()}
+                    >
+                      Stop session
+                    </button>
+                  )}
+                </div>
+
+                {!simple && (
+                  <>
+                    <div className="action-row">
+                      <button
+                        type="button"
+                        className="target-btn secondary"
+                        onClick={() => start("replay")}
+                      >
+                        Replay demo
+                      </button>
+                      <button
+                        type="button"
+                        className="target-btn secondary"
+                        onClick={() => start("neuralink_stub")}
+                      >
+                        Intent stub
+                      </button>
+                    </div>
+                    <RecipePicker value={recipe} onChange={setRecipe} />
+                    <div className="action-row">
+                      <button
+                        type="button"
+                        className={
+                          state.predictive_enabled
+                            ? "target-btn recipe active"
+                            : "target-btn secondary recipe"
+                        }
+                        onClick={() => setPredictive(!state.predictive_enabled)}
+                      >
+                        Predictive {state.predictive_enabled ? "on" : "off"}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {state.precursors && state.precursors.length > 0 && (
+                  <p className="meta-line" aria-live="polite">
+                    Precursor:{" "}
+                    {state.precursors
+                      .map(
+                        (p) =>
+                          `${String(p.kind)} (${Number(p.confidence).toFixed(2)})`
+                      )
+                      .join(", ")}
+                  </p>
+                )}
+
+                <FlowRing
+                  state={state.flow.state}
+                  engagement={state.flow.engagement}
+                  minutes={Number(
+                    state.flow.minutes_in_state?.toFixed?.(1) ??
+                      state.flow.minutes_in_state
+                  )}
+                />
+
+                <section className="status-block" aria-live="polite">
+                  <h2>
+                    {architectLabel(state.mode, state.agent_paused, state.running)}
+                  </h2>
+                  <p className="explanation">{explanationText}</p>
+                  {!simple && (
+                    <p className="meta-line">
+                      conf {state.flow.confidence?.toFixed?.(2) ?? "—"} · {recipe}
+                      {state.thresholds
+                        ? ` · thr ${state.thresholds.protect?.toFixed?.(2)}/${state.thresholds.deep?.toFixed?.(2)}`
+                        : ""}
+                    </p>
+                  )}
+                  <div className="action-row">
+                    <button
+                      type="button"
+                      className="target-btn"
+                      onClick={() => setShowWhy(true)}
+                    >
+                      Why?
+                    </button>
+                  </div>
+                  <div className="action-row label-row">
+                    <button
+                      type="button"
+                      className="target-btn secondary"
+                      onClick={() => label(true)}
+                      disabled={!state.running}
+                    >
+                      Felt in flow
+                    </button>
+                    <button
+                      type="button"
+                      className="target-btn secondary"
+                      onClick={() => label(false)}
+                      disabled={!state.running}
+                    >
+                      Not really
+                    </button>
+                  </div>
+                </section>
+
+                <div className="action-row" style={{ marginTop: "1rem" }}>
                   <button
                     type="button"
                     className="target-btn secondary"
-                    onClick={() => start("replay")}
+                    onClick={() => setSimpleMode(!simple)}
                   >
-                    Start replay
+                    {simple ? "Show more options" : "Simple mode"}
                   </button>
-                </>
-              ) : (
-                <button type="button" className="target-btn secondary" onClick={() => stop()}>
-                  Stop session
-                </button>
-              )}
-            </div>
-
-            <RecipePicker value={recipe} onChange={setRecipe} />
-
-            <div className="action-row" style={{ marginBottom: "0.5rem" }}>
-              <button
-                type="button"
-                className={
-                  state.predictive_enabled
-                    ? "target-btn recipe active"
-                    : "target-btn secondary recipe"
-                }
-                onClick={() => setPredictive(!state.predictive_enabled)}
-                aria-pressed={!!state.predictive_enabled}
-              >
-                Predictive {state.predictive_enabled ? "on" : "off"}
-              </button>
-            </div>
-
-            {state.precursors && state.precursors.length > 0 && (
-              <p className="meta-line" aria-live="polite">
-                Precursor:{" "}
-                {state.precursors
-                  .map((p) => `${String(p.kind)} (${Number(p.confidence).toFixed(2)})`)
-                  .join(", ")}
-              </p>
+                </div>
+              </>
             )}
 
-            <FlowRing
-              state={state.flow.state}
-              engagement={state.flow.engagement}
-              minutes={Number(
-                state.flow.minutes_in_state?.toFixed?.(1) ?? state.flow.minutes_in_state
-              )}
-            />
-
-            <section className="status-block" aria-live="polite">
-              <h2>
-                Architect:{" "}
-                {architectLabel(state.mode, state.agent_paused, state.running)}
-              </h2>
-              <p className="explanation">{explanationText}</p>
-              <p className="meta-line">
-                conf {state.flow.confidence?.toFixed?.(2) ?? "—"} · mode {state.mode} ·
-                recipe {recipe}
-                {state.thresholds
-                  ? ` · thr ${state.thresholds.protect?.toFixed?.(2)}/${state.thresholds.deep?.toFixed?.(2)}`
-                  : ""}
-                {state.digital?.focus_enabled ? " · focus on" : ""}
-                {state.digital?.notifications_suppressed ? " · notices quiet" : ""}
-              </p>
-              <div className="action-row">
-                <button
-                  type="button"
-                  className="target-btn"
-                  onClick={() => undo()}
-                  disabled={!state.can_undo}
-                >
-                  Undo last
-                </button>
-                <button
-                  type="button"
-                  className="target-btn"
-                  onClick={() => setShowWhy(true)}
-                >
-                  Why?
-                </button>
-                <button type="button" className="target-btn secondary" onClick={() => restMode()}>
-                  Rest mode
-                </button>
-              </div>
-              <div className="action-row label-row">
-                <button
-                  type="button"
-                  className="target-btn secondary"
-                  onClick={() => label(true)}
-                  disabled={!state.running}
-                >
-                  I felt in flow
-                </button>
-                <button
-                  type="button"
-                  className="target-btn secondary"
-                  onClick={() => label(false)}
-                  disabled={!state.running}
-                >
-                  Not really
-                </button>
-              </div>
-            </section>
-          </>
-        )}
-
-        {tab === "insights" && <InsightsPanel session={state.session} />}
-        {tab === "coaching" && <CoachingPanel />}
-      </main>
+            {!simple && tab === "insights" && (
+              <InsightsPanel session={state.session} />
+            )}
+            {!simple && tab === "coaching" && <CoachingPanel />}
+          </main>
+        </>
+      )}
 
       {showWhy && (
         <ExplainDrawer
@@ -253,7 +328,8 @@ export function App() {
 
       <footer className="footer">
         <p>
-          Local companion UI · Not a medical device · Predictive layer opt-in · No cloud by default
+          Local · Not a medical device · Built for BCI users ·{" "}
+          <span className="dim">Pause is always available</span>
         </p>
       </footer>
     </div>

@@ -353,6 +353,53 @@ body {
   line-height: 1.45;
 }
 
+.sticky-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(15, 18, 24, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #2a3348;
+}
+
+.target-xl {
+  min-width: 200px;
+  min-height: 80px;
+  font-size: 1.15rem;
+}
+
+.onboarding {
+  width: min(560px, 100%);
+  text-align: center;
+}
+
+.onboarding h2 {
+  margin-top: 0.25rem;
+}
+
+.preset-picker {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.app-shell.simple .main-panel {
+  padding-top: 1.25rem;
+}
+
+code {
+  background: #243049;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
+
 
 
 @media (prefers-reduced-motion: reduce) {

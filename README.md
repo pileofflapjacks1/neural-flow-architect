@@ -152,43 +152,40 @@ This project is **independent** and not affiliated with Neuralink Corp. unless e
 
 ---
 
-## Quick start (Day-1 prototype)
+## Quick start (easy path for users & caregivers)
 
-Requirements: **Python 3.11+**, macOS/Linux/Windows.
+Requirements: **Python 3.11+**, macOS/Linux/Windows. Node optional (companion UI).
 
 ```bash
-cd /Users/joe/Projects/neural-flow-architect   # or your clone path
-python -m venv .venv
+cd neural-flow-architect   # your clone path
+python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 
-# Run the simulator-based closed loop (no hardware required)
-nfa demo --duration 30
-
-# Replay a synthetic engagement trajectory fixture
-nfa demo --adapter replay --duration 30
-
-# Local companion API (REST + WebSocket on 127.0.0.1:8741)
-nfa serve --adapter simulator
-
-# Offline policy evaluation (no server needed)
-nfa eval --duration 20 --recipe study
-
-# Latency / high-channel stress vs documented budgets
-nfa bench --channels 8 --iterations 40
-nfa bench --channels 1024 --iterations 20
-
-# Or as a module
-python -m neural_flow_architect.cli demo --duration 30
+nfa doctor                  # health check
+nfa start                   # local API + clear next steps
 ```
 
 Companion UI (separate terminal):
 
 ```bash
-cd frontend
-npm install
-npm run dev
-# open http://127.0.0.1:5173 — Start simulator, Pause, Undo, label flow
+cd frontend && npm install && npm run dev
+# open http://127.0.0.1:5173
+# Onboarding → pick a daily preset → Start session
+# Sticky controls: Pause · Undo · Rest (always available)
+```
+
+**Guides:** [docs/ux/USER_GUIDE.md](docs/ux/USER_GUIDE.md) · [docs/ux/CAREGIVER_SETUP.md](docs/ux/CAREGIVER_SETUP.md) · [docs/bci/NEURALINK_READINESS.md](docs/bci/NEURALINK_READINESS.md)
+
+### Other commands
+
+```bash
+nfa demo --duration 30              # CLI closed loop
+nfa demo --adapter replay --duration 30
+nfa serve --adapter simulator       # API only
+nfa serve --adapter neuralink_stub  # high-channel + intent practice
+nfa eval --duration 20 --recipe study
+nfa bench --channels 8 --iterations 40
 ```
 
 Optional BrainFlow hardware path:

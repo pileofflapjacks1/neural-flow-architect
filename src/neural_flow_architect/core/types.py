@@ -133,6 +133,8 @@ class UserPreferences(BaseModel):
     preferred_recipe: str = "study"
     label_count: int = 0
     positive_flow_labels: int = 0
+    simple_mode: bool = True
+    active_preset: str | None = None
 
 
 class WorldSnapshot(BaseModel):
