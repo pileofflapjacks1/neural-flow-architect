@@ -1,0 +1,33 @@
+# Neural Flow Architect — default configuration (safe, local-first)
+
+privacy:
+  local_only: true
+  allow_cloud_llm: false
+
+adapter:
+  name: simulator
+
+signal:
+  sample_rate_hz: 250
+  channels: 8
+  window_sec: 1.0
+  hop_sec: 0.25
+
+flow:
+  protect_engagement_threshold: 0.62
+  deep_flow_engagement_threshold: 0.82
+
+agent:
+  mode: rules
+  dry_run: false
+  explain_actions: true
+  min_confidence: 0.45
+  min_quality: 0.35
+  require_confirm_for_high_impact: true
+
+environment:
+  iot_enabled: false
+
+api:
+  host: 127.0.0.1
+  port: 8741
