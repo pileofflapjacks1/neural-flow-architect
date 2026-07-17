@@ -178,7 +178,9 @@ def contract_cmd(
     settings.adapter = adapter  # type: ignore[assignment]
     # BrainFlow file mode without package when using synthetic file
     if adapter == "brainflow" and not settings.brainflow_file:
-        settings.brainflow_file = "tests/fixtures/synthetic_eeg.csv"
+        from neural_flow_architect.adapters.registry import default_brainflow_fixture
+
+        settings.brainflow_file = str(default_brainflow_fixture())
     _banner()
     console.print(f"[green]Adapter contract[/] adapter={adapter}")
     ad = build_adapter(settings)
@@ -194,13 +196,20 @@ def contract_cmd(
 
 
 @app.command()
-def doctor() -> None:
+def doctor(
+    brainflow: bool = typer.Option(
+        False,
+        "--brainflow",
+        help="Also validate open-EEG path: fixture file, file stream, latency, optional package",
+    ),
+) -> None:
     """Check install health (Python, deps, data dir, privacy defaults)."""
     from neural_flow_architect.core.doctor import run_doctor
 
     _banner()
-    report = run_doctor()
-    table = Table(title="Doctor", show_header=True, header_style="bold")
+    report = run_doctor(brainflow=brainflow)
+    title = "Doctor (BrainFlow path)" if brainflow else "Doctor"
+    table = Table(title=title, show_header=True, header_style="bold")
     table.add_column("Check")
     table.add_column("OK")
     table.add_column("Detail")
@@ -208,9 +217,20 @@ def doctor() -> None:
         table.add_row(c.name, "✓" if c.ok else "✗", c.detail)
     console.print(table)
     if report.ok:
-        console.print("[green]All checks passed.[/] Next: [bold]nfa start[/]")
+        if brainflow:
+            console.print(
+                "[green]BrainFlow path OK.[/] Try: "
+                "[bold]NFA_ADAPTER=brainflow NFA_BRAINFLOW_FILE=tests/fixtures/synthetic_eeg.csv nfa start[/]"
+            )
+        else:
+            console.print(
+                "[green]All checks passed.[/] Next: [bold]nfa start[/] "
+                "(or [bold]nfa doctor --brainflow[/] for open-EEG path)"
+            )
     else:
-        console.print("[yellow]Some checks failed.[/] See docs/ux/USER_GUIDE.md")
+        console.print(
+            "[yellow]Some checks failed.[/] See docs/bci/BRAINFLOW.md and docs/ux/USER_GUIDE.md"
+        )
         raise typer.Exit(code=1)
 
 

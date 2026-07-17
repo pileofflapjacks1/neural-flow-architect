@@ -26,9 +26,15 @@ Prototype targets for the local closed-loop path. Values are **guidance**, not S
 ```bash
 nfa bench --channels 8 --iterations 40
 nfa bench --channels 1024 --iterations 20
+
+# Open-EEG file path (fixture CSV → features → flow), no hardware
+nfa doctor --brainflow
+pytest tests/integration/test_brainflow_pipeline.py -q
 ```
 
 Reports include mean / p50 / p95 / max per stage and pass/fail vs budgets.
+
+`nfa doctor --brainflow` asserts feature→flow **p95 ≤ 80 ms** on the synthetic fixture (guidance, same as the table above).
 
 ## Principles
 

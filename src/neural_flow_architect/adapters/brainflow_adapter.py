@@ -55,8 +55,10 @@ class BrainFlowAdapter:
         serial_port: str = "",
         chunk_samples: int = 64,
         file_path: str = "",
+        sample_rate_hz: float = 250.0,
         stall_timeout_sec: float = 3.0,
         max_reconnects: int = 3,
+        realtime: bool = True,
     ) -> None:
         self.board_id = board_id
         self.serial_port = serial_port
@@ -64,12 +66,13 @@ class BrainFlowAdapter:
         self.file_path = file_path.strip()
         self.stall_timeout_sec = stall_timeout_sec
         self.max_reconnects = max_reconnects
+        self.realtime = realtime
         self._board = None
         self._meta: StreamMetadata | None = None
         self._seq = 0
         self._connected = False
         self._eeg_channels: list[int] = []
-        self._sample_rate = 250.0
+        self._sample_rate = float(sample_rate_hz) if sample_rate_hz > 0 else 250.0
         self._last_sample_mono = 0.0
         self._reconnects = 0
         # File replay path (no BrainFlow required if only numpy/csv)
@@ -103,7 +106,7 @@ class BrainFlowAdapter:
             arr = arr.T
         self._file_data = arr.astype(np.float64)
         self._file_pos = 0
-        self._sample_rate = 250.0
+        # Keep caller-provided sample_rate_hz (default 250) for file replay timing
         n_ch = self._file_data.shape[0]
         self._meta = StreamMetadata(
             source_kind=SourceKind.REPLAY,
@@ -271,7 +274,8 @@ class BrainFlowAdapter:
                 quality=quality,
             )
             self._seq += 1
-            await asyncio.sleep(dt)
+            if self.realtime:
+                await asyncio.sleep(dt)
 
     async def _try_reconnect(self) -> None:
         if self._reconnects >= self.max_reconnects or self._file_mode:

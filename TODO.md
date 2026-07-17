@@ -30,7 +30,7 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] CLI: `nfa demo`, `nfa stream`, `nfa status`
 - [x] Unit tests for flow state machine + agent policies
 - [x] Frontend scaffold (BCI-native layout stubs)
-- [x] CI workflow prepared (lint, format, test, package) — YAML in `.github/workflows.pending/` until PAT has `workflow` scope
+- [x] CI workflow on GitHub Actions (lint, format, test, package)
 - [x] Pre-commit config committed and documented
 - [x] Local `scripts/ci.sh` mirrors Actions gates
 - [ ] First annotated public demo GIF / short video
@@ -73,6 +73,8 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Optional connectivity feature flag (`include_connectivity`)
 - [x] Session labeling UI (self-report: “I felt in flow”) for supervised personalization
 - [x] Graceful degradation when quality is low (idle_degraded + no IoT)
+- [x] BrainFlow validation pack: `nfa doctor --brainflow`, file-mode pipeline tests, latency smoke
+- [x] UI signal chip shows adapter name + quality overall
 
 ### Agent
 - [x] Tool registry with permission tiers (low / medium / high impact)
@@ -95,8 +97,8 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Data export (JSON) with minimization options (`/session/export`)
 
 ### Quality
-- [ ] Integration tests with fixture EEG
-- [ ] Performance budget: end-to-end feature→state latency targets documented
+- [x] Integration tests with fixture EEG (BrainFlow file mode closed loop)
+- [x] Performance budget: feature→flow latency smoke in doctor + tests
 - [ ] Accessibility audit checklist for companion UI
 
 ---
@@ -167,11 +169,12 @@ Check items as they ship. Prefer small, reviewable PRs.
 ## Immediate next engineering tasks (suggested order)
 
 1. ~~Wire GitHub Actions CI~~ done  
-2. Clear remaining mypy strict debt (make advisory CI job blocking)  
-3. Annotated public demo GIF / short video  
-4. Deeper BrainFlow live board validation notes  
-5. Timeline filter chips / scoreboard sparklines (Insights polish)  
+2. ~~BrainFlow validation pack~~ done  
+3. Clear remaining mypy strict debt (make advisory CI job blocking)  
+4. Annotated public demo GIF / short video  
+5. Accessibility audit checklist for companion UI  
+6. Timeline filter chips / scoreboard sparklines (Insights polish)  
 
 ---
 
-*Last updated: CI + pre-commit — July 2026*
+*Last updated: BrainFlow validation pack — July 2026*

@@ -166,6 +166,7 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 
 nfa doctor                  # health check
+nfa doctor --brainflow      # open-EEG path: fixture, latency, optional package
 nfa start                   # local API + clear next steps
 nfa start --with-ui         # API + Vite UI (needs npm install in frontend/)
 ```
@@ -192,9 +193,10 @@ nfa serve --adapter simulator       # API only
 nfa serve --adapter neuralink_stub  # high-channel + intent practice
 
 # BrainFlow (optional hardware / synthetic / file)
-pip install -e ".[brainflow]"
-NFA_ADAPTER=brainflow NFA_BRAINFLOW_BOARD_ID=-1 nfa serve
+# File mode works without the brainflow package:
 NFA_ADAPTER=brainflow NFA_BRAINFLOW_FILE=tests/fixtures/synthetic_eeg.csv nfa serve
+pip install -e ".[brainflow]"   # live boards + synthetic board
+NFA_ADAPTER=brainflow NFA_BRAINFLOW_BOARD_ID=-1 nfa serve
 
 nfa eval --duration 20 --recipe study
 nfa bench --channels 8 --iterations 40

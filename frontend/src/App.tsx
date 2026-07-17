@@ -119,6 +119,10 @@ export function App() {
           <p className="signal-chip" aria-live="polite">
             {connected ? `Signal ${state.signal}` : "Connecting…"}
             {state.running ? " · live" : " · idle"}
+            {state.adapter ? ` · ${state.adapter}` : ""}
+            {typeof state.quality?.overall === "number" && state.running
+              ? ` · q ${Number(state.quality.overall).toFixed(2)}`
+              : ""}
             {simple ? " · simple mode" : " · full mode"}
             {typeof uptime === "number" && state.running
               ? ` · ${Math.floor(uptime / 60)}m`

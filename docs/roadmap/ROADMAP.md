@@ -90,7 +90,7 @@ timeline
 - IoT actions safe under dry-run and rate limits  
 - Undo rate trending down for default protect tools  
 
-**Status:** Phase 2 complete for open-source foundation (July 2026). Remaining polish: full LLM tool-calling planner, deeper live OS Focus on each platform, richer BrainFlow live validation.  
+**Status:** Phase 2 complete for open-source foundation (July 2026). BrainFlow file-mode validation pack shipped (`nfa doctor --brainflow`). Remaining polish: full LLM tool-calling planner, deeper live OS Focus on each platform, optional live-board CI when BrainFlow is available.  
 
 ---
 
