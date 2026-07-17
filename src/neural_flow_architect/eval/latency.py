@@ -21,7 +21,6 @@ from neural_flow_architect.core.types import (
 from neural_flow_architect.flow.engine import FlowEngine
 from neural_flow_architect.signal.features import FeatureExtractor
 
-
 # Documented prototype budgets (ms) — see docs/architecture/LATENCY_BUDGET.md
 BUDGETS_MS = {
     "feature_extract": 50.0,

@@ -8,10 +8,14 @@ from datetime import datetime
 from typing import Any
 
 from neural_flow_architect.agent.undo import UndoStack
+from neural_flow_architect.core.active_app import set_user_category_map
+from neural_flow_architect.core.app_map import AppCategoryMap
+from neural_flow_architect.core.caregiver import CaregiverChecklist
 from neural_flow_architect.core.context import enrich_context
 from neural_flow_architect.core.failsafe import FailSafeGuard, FailSafeReason
 from neural_flow_architect.core.intents import IntentRouter
 from neural_flow_architect.core.onboarding import OnboardingState
+from neural_flow_architect.core.quiet_hours import QuietHours
 from neural_flow_architect.core.runtime import NeuralFlowRuntime, RuntimeTick
 from neural_flow_architect.core.settings import Settings, get_settings
 from neural_flow_architect.core.types import (
@@ -23,6 +27,7 @@ from neural_flow_architect.core.types import (
 )
 from neural_flow_architect.environment.recipes import apply_recipe, list_recipes
 from neural_flow_architect.insights.coaching import build_coaching_notes
+from neural_flow_architect.insights.scoreboard import build_policy_scoreboard
 from neural_flow_architect.personalization.feedback import FeedbackStore
 from neural_flow_architect.personalization.learning import (
     learn_from_block_review,
@@ -31,15 +36,9 @@ from neural_flow_architect.personalization.learning import (
 )
 from neural_flow_architect.personalization.presets import get_preset, list_presets
 from neural_flow_architect.personalization.profile import UserProfile
+from neural_flow_architect.personalization.signature import build_personal_signature
 from neural_flow_architect.privacy.audit import AuditLog
 from neural_flow_architect.privacy.consent import ConsentScope
-from neural_flow_architect.core.quiet_hours import QuietHours
-from neural_flow_architect.core.caregiver import CaregiverChecklist
-from neural_flow_architect.personalization.signature import build_personal_signature
-from neural_flow_architect.core.app_map import AppCategoryMap
-from neural_flow_architect.core.active_app import set_user_category_map
-from neural_flow_architect.insights.scoreboard import build_policy_scoreboard
-
 
 StateListener = Callable[[dict[str, Any]], None]
 
@@ -172,8 +171,7 @@ class SessionController:
             },
             "precursors": [],
             "predictive_enabled": self.settings.predictive_enabled,
-            "llm_enabled": self.settings.llm_enabled
-            or self.settings.agent_mode == "llm_local",
+            "llm_enabled": self.settings.llm_enabled or self.settings.agent_mode == "llm_local",
             "simple_mode": self.profile.preferences.simple_mode,
             "active_preset": self.profile.preferences.active_preset,
             "onboarding_completed": self.onboarding.completed,
@@ -197,9 +195,7 @@ class SessionController:
             "pending_block_review": self._pending_block_review,
             "caregiver_checklist": self.caregiver.to_dict(),
             "personal_signature": None,
-            "scan_mode": bool(
-                getattr(self.profile.preferences, "scan_mode", False)
-            ),
+            "scan_mode": bool(getattr(self.profile.preferences, "scan_mode", False)),
             "shortcuts": [],
             "help": {
                 "user_guide": "docs/ux/USER_GUIDE.md",
@@ -393,9 +389,7 @@ class SessionController:
         self._tick_count += 1
         now = datetime.utcnow()
         uptime = (
-            (now - self._session_started_at).total_seconds()
-            if self._session_started_at
-            else 0.0
+            (now - self._session_started_at).total_seconds() if self._session_started_at else 0.0
         )
         # Periodic soft checkpoint of live session summary (still local)
         checkpoint_every = max(30.0, float(self.settings.session_checkpoint_sec))
@@ -431,8 +425,7 @@ class SessionController:
             },
             "precursors": tick.precursors,
             "predictive_enabled": self.settings.predictive_enabled,
-            "llm_enabled": self.settings.llm_enabled
-            or self.settings.agent_mode == "llm_local",
+            "llm_enabled": self.settings.llm_enabled or self.settings.agent_mode == "llm_local",
             "simple_mode": self.profile.preferences.simple_mode,
             "active_preset": self.profile.preferences.active_preset,
             "onboarding_completed": self.onboarding.completed,
@@ -500,7 +493,11 @@ class SessionController:
         custom = self.settings.data_dir / "presets"
         preset = get_preset(preset_id, custom)
         if preset is None:
-            return {"ok": False, "message": f"Unknown preset {preset_id}", "presets": list_presets(custom)}
+            return {
+                "ok": False,
+                "message": f"Unknown preset {preset_id}",
+                "presets": list_presets(custom),
+            }
         self.set_recipe(preset.recipe)
         self._user_goal = preset.user_goal
         self.profile.preferences.active_preset = preset.id
@@ -589,9 +586,7 @@ class SessionController:
     def import_profile(self, bundle: dict[str, Any]) -> dict[str, Any]:
         from neural_flow_architect.personalization.backup import import_profile_bundle
 
-        self.profile = import_profile_bundle(
-            self.settings.data_dir / "profiles", bundle
-        )
+        self.profile = import_profile_bundle(self.settings.data_dir / "profiles", bundle)
         self._recipe = self.profile.preferences.preferred_recipe or "study"
         if bundle.get("onboarding"):
             from neural_flow_architect.core.onboarding import OnboardingState
@@ -634,7 +629,9 @@ class SessionController:
         if parsed is None:
             return {"ok": False, "message": "Unrecognized command", "source": source}
         result = await self.inject_intent(
-            parsed.intent_type, confidence=parsed.confidence, payload={"source": parsed.source, "raw": parsed.raw}
+            parsed.intent_type,
+            confidence=parsed.confidence,
+            payload={"source": parsed.source, "raw": parsed.raw},
         )
         result["parsed"] = {
             "intent": parsed.intent_type,
@@ -703,9 +700,7 @@ class SessionController:
             self.runtime.architect.force_idle = True
             self.audit.record("override.pause", "User paused Architect")
             self.caregiver.mark("pause", True)
-            self.caregiver.save(
-                self.settings.data_dir / "profiles" / "caregiver_checklist.json"
-            )
+            self.caregiver.save(self.settings.data_dir / "profiles" / "caregiver_checklist.json")
         else:
             self.runtime.physical.enabled = self.settings.iot_enabled
             if self.failsafe.state.reason in {
@@ -755,9 +750,7 @@ class SessionController:
             if peek is not None:
                 self.record_feedback(peek.tool_id, "unhelpful", note="auto:undo")
             self.caregiver.mark("undo", True)
-            self.caregiver.save(
-                self.settings.data_dir / "profiles" / "caregiver_checklist.json"
-            )
+            self.caregiver.save(self.settings.data_dir / "profiles" / "caregiver_checklist.json")
         state = self.get_state()
         state["can_undo"] = self.undo_stack.can_undo
         state["digital"] = self.runtime.digital.snapshot()
@@ -798,9 +791,7 @@ class SessionController:
             rating=rating,
         )
         self.caregiver.mark("label_or_review", True)
-        self.caregiver.save(
-            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
-        )
+        self.caregiver.save(self.settings.data_dir / "profiles" / "caregiver_checklist.json")
         state = self.get_state()
         state["preferences"] = self.profile.preferences.model_dump()
         state["feedback"] = self.feedback.as_dict()
@@ -843,7 +834,6 @@ class SessionController:
             self.runtime.insights.save_current_if_any()
         elif sessions:
             import json
-            from pathlib import Path
 
             sid = sessions[0].get("session_id")
             path = self.settings.data_dir / "sessions" / f"{sid}.json"
@@ -858,9 +848,7 @@ class SessionController:
                 path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
         self.caregiver.mark("label_or_review", True)
-        self.caregiver.save(
-            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
-        )
+        self.caregiver.save(self.settings.data_dir / "profiles" / "caregiver_checklist.json")
 
         # Learn from block review (thresholds + protect style)
         last = sessions[0] if sessions else {}
@@ -984,7 +972,9 @@ class SessionController:
     def os_focus_status(self) -> dict[str, Any]:
         return {"ok": True, "os_focus": self.runtime.os_focus.status()}
 
-    def set_os_focus(self, *, enabled: bool | None = None, force_dry_run: bool | None = None) -> dict[str, Any]:
+    def set_os_focus(
+        self, *, enabled: bool | None = None, force_dry_run: bool | None = None
+    ) -> dict[str, Any]:
         if enabled is not None:
             self.settings.os_focus_enabled = enabled
             self.runtime.os_focus.enabled = enabled
@@ -1000,9 +990,7 @@ class SessionController:
         self.caregiver.mark(item_id, done)
         if item_id == "helper_leaves" and done:
             self.audit.record("caregiver.complete", "Helper marked setup complete")
-        self.caregiver.save(
-            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
-        )
+        self.caregiver.save(self.settings.data_dir / "profiles" / "caregiver_checklist.json")
         state = self.get_state()
         state["caregiver_checklist"] = self.caregiver.to_dict()
         self._publish(state)
@@ -1078,9 +1066,7 @@ class SessionController:
         self.profile.preferences.agent_paused = True
         self.profile.save(self.settings.data_dir / "profiles")
         self.caregiver.mark("rest", True)
-        self.caregiver.save(
-            self.settings.data_dir / "profiles" / "caregiver_checklist.json"
-        )
+        self.caregiver.save(self.settings.data_dir / "profiles" / "caregiver_checklist.json")
         state = self.get_state()
         state["agent_paused"] = True
         state["digital"] = self.runtime.digital.snapshot()

@@ -38,16 +38,14 @@ def propose_protect(snapshot: WorldSnapshot) -> list[ActionProposal]:
             impact=ImpactLevel.LOW,
             params={"density": "minimal" if deep else "calm"},
             score=0.7 + bonus,
-            causes=causes
-            + [{"signal": "reason", "value": "reduce UI chrome during engagement"}],
+            causes=causes + [{"signal": "reason", "value": "reduce UI chrome during engagement"}],
         ),
         ActionProposal(
             tool_id="notify.suppress_noncritical",
             impact=ImpactLevel.MEDIUM,
             params={},
             score=(0.95 if deep else 0.85) + bonus + (0.0 if app_cat != "social" else -0.4),
-            causes=causes
-            + [{"signal": "reason", "value": "protect sustained engagement"}],
+            causes=causes + [{"signal": "reason", "value": "protect sustained engagement"}],
         ),
         ActionProposal(
             tool_id="focus.enable",
@@ -71,8 +69,7 @@ def propose_protect(snapshot: WorldSnapshot) -> list[ActionProposal]:
                 impact=ImpactLevel.MEDIUM,
                 params={},
                 score=0.55 + bonus,
-                causes=causes
-                + [{"signal": "reason", "value": "supportive ambient lighting"}],
+                causes=causes + [{"signal": "reason", "value": "supportive ambient lighting"}],
             )
         )
     return proposals

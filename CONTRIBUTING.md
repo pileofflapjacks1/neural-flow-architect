@@ -28,7 +28,16 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 pytest
 ruff check src tests
-mypy src
+ruff format --check src tests
+mypy src   # advisory until strict debt is cleared; CI does not block on mypy yet
+```
+
+### Pre-commit (recommended)
+
+```bash
+pre-commit install
+pre-commit run --all-files   # once after install
+# pytest also runs on git push (pre-push hook)
 ```
 
 Optional:
@@ -36,6 +45,27 @@ Optional:
 ```bash
 pip install -e ".[brainflow]"   # hardware / file boards
 ```
+
+### CI
+
+**Local (always available):**
+
+```bash
+./scripts/ci.sh
+# or: pre-commit install && pre-commit run --all-files
+```
+
+| Gate | Blocking locally? |
+|---|---|
+| `ruff check` + `ruff format --check` | Yes |
+| `pytest` | Yes |
+| `python -m build` | Yes (`scripts/ci.sh`) |
+| `mypy src` | No (advisory) |
+
+**GitHub Actions:** workflow YAML is prepared at
+[`.github/workflows.pending/ci.yml`](.github/workflows.pending/ci.yml).
+Moving it to `.github/workflows/` requires a maintainer PAT with the
+`workflow` scope — see [`.github/workflows.pending/README.md`](.github/workflows.pending/README.md).
 
 ## Project conventions
 

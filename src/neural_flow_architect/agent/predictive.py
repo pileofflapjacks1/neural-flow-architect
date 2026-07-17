@@ -82,11 +82,16 @@ class PrecursorTracker:
         eng = self._engagement[-1]
 
         # Rising flow: positive engagement slope while not yet deep
-        if eng_slope > 0.015 and eng > 0.45 and recent[-1] in {
-            FlowState.LOW.value,
-            FlowState.PRE_FLOW.value,
-            FlowState.FLOW.value,
-        }:
+        if (
+            eng_slope > 0.015
+            and eng > 0.45
+            and recent[-1]
+            in {
+                FlowState.LOW.value,
+                FlowState.PRE_FLOW.value,
+                FlowState.FLOW.value,
+            }
+        ):
             conf = min(0.95, 0.5 + eng_slope * 8 + (eng - 0.45) * 0.5)
             if conf >= self.min_confidence:
                 events.append(
@@ -163,7 +168,12 @@ def propose_from_precursors(
                     params={"hint": "rising_flow", "recipe": snapshot.context.recipe},
                     score=0.4 + 0.3 * ev.confidence,
                     causes=causes
-                    + [{"signal": "reason", "value": "prepare focus supports before flow consolidates"}],
+                    + [
+                        {
+                            "signal": "reason",
+                            "value": "prepare focus supports before flow consolidates",
+                        }
+                    ],
                 )
             )
         elif ev.kind == PrecursorKind.BREAKING_FLOW:
@@ -185,7 +195,12 @@ def propose_from_precursors(
                     params={"suggestion": "next logical micro-task"},
                     score=0.3 + 0.2 * ev.confidence,
                     causes=causes
-                    + [{"signal": "reason", "value": "possible task-switch precursor — queue non-modal suggestion"}],
+                    + [
+                        {
+                            "signal": "reason",
+                            "value": "possible task-switch precursor — queue non-modal suggestion",
+                        }
+                    ],
                 )
             )
         elif ev.kind == PrecursorKind.FATIGUE_HINT:
@@ -196,7 +211,12 @@ def propose_from_precursors(
                     params={"hint": "fatigue", "recipe": "rest"},
                     score=0.45,
                     causes=causes
-                    + [{"signal": "reason", "value": "fatigue-like pattern — prepare rest supports"}],
+                    + [
+                        {
+                            "signal": "reason",
+                            "value": "fatigue-like pattern — prepare rest supports",
+                        }
+                    ],
                 )
             )
     return sorted(proposals, key=lambda p: p.score, reverse=True)

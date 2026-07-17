@@ -21,9 +21,7 @@ _TEMPLATES: dict[str, str] = {
         "I enabled focus mode to protect emerging concentration "
         "(engagement {engagement:.0%}, state {state})."
     ),
-    "focus.disable": (
-        "I disabled focus mode to support a graceful transition out of flow."
-    ),
+    "focus.disable": ("I disabled focus mode to support a graceful transition out of flow."),
     "iot.lights.dim_for_focus": (
         "I dimmed the lights because your engagement signature is rising "
         "({engagement:.0%}) and ambient support may help sustain flow."
@@ -42,8 +40,6 @@ _TEMPLATES: dict[str, str] = {
         "(engagement {engagement:.0%})."
     ),
 }
-
-
 
 
 class Explainer:

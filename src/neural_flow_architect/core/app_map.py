@@ -42,8 +42,7 @@ class AppCategoryMap:
 
     def __init__(self, mapping: dict[str, str] | None = None) -> None:
         self.mapping: dict[str, str] = {
-            k.lower(): v for k, v in (mapping or DEFAULT_MAP).items()
-            if v in VALID_CATEGORIES
+            k.lower(): v for k, v in (mapping or DEFAULT_MAP).items() if v in VALID_CATEGORIES
         }
 
     @classmethod

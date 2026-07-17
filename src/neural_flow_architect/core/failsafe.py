@@ -118,7 +118,11 @@ class FailSafeGuard:
 
     def trip(self, reason: FailSafeReason, message: str) -> None:
         # User pause is soft; don't override a harder trip message unless upgrading
-        if self.state.active and self.state.reason == FailSafeReason.USER_PAUSE and reason != FailSafeReason.USER_PAUSE:
+        if (
+            self.state.active
+            and self.state.reason == FailSafeReason.USER_PAUSE
+            and reason != FailSafeReason.USER_PAUSE
+        ):
             pass  # allow upgrade
         self.state.active = True
         self.state.reason = reason

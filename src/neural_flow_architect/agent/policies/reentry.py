@@ -23,16 +23,14 @@ def propose_reentry(snapshot: WorldSnapshot) -> list[ActionProposal]:
             impact=ImpactLevel.LOW,
             params={"density": "calm"},
             score=0.55 + bonus,
-            causes=causes
-            + [{"signal": "reason", "value": "gentle scaffold for re-entry"}],
+            causes=causes + [{"signal": "reason", "value": "gentle scaffold for re-entry"}],
         ),
         ActionProposal(
             tool_id="focus.enable",
             impact=ImpactLevel.MEDIUM,
             params={},
             score=0.45 + bonus,
-            causes=causes
-            + [{"signal": "reason", "value": "optional focus frame for restart"}],
+            causes=causes + [{"signal": "reason", "value": "optional focus frame for restart"}],
         ),
         ActionProposal(
             tool_id="recipe.apply",

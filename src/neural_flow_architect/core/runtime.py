@@ -178,16 +178,14 @@ class NeuralFlowRuntime:
                     break
 
                 # Fail-safe quality tracking on every frame
-                self.failsafe.note_frame(
-                    frame.quality.overall, dropout=frame.quality.dropout
-                )
+                self.failsafe.note_frame(frame.quality.overall, dropout=frame.quality.dropout)
                 # Hard-disable IoT while fail-safe
                 if self.failsafe.blocks_proactive:
                     self.physical.enabled = False
-                    self.architect.force_idle = (
-                        self.failsafe.state.reason.value
-                        in {"stream_stall", "agent_error"}
-                    )
+                    self.architect.force_idle = self.failsafe.state.reason.value in {
+                        "stream_stall",
+                        "agent_error",
+                    }
                 else:
                     self.physical.enabled = self.settings.iot_enabled
                     self.architect.force_idle = False
@@ -197,9 +195,7 @@ class NeuralFlowRuntime:
                     self.last_flow = estimate
                     self.last_quality_overall = window.quality.overall
                     self.insights.observe_flow(estimate)
-                    self.failsafe.note_frame(
-                        window.quality.overall, dropout=window.quality.dropout
-                    )
+                    self.failsafe.note_frame(window.quality.overall, dropout=window.quality.dropout)
                     decision = await self._maybe_act(estimate, window.quality)
                     self.last_decision = decision
                     tick = RuntimeTick(

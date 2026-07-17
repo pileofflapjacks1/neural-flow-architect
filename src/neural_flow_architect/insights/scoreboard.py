@@ -57,9 +57,7 @@ def build_policy_scoreboard(
 
     # Composite score 0–100
     undo_component = max(0.0, 1.0 - min(1.0, (total_undos / max(total_actions, 1)) * 2))
-    review_component = (
-        helpful_blocks / max(len(reviews), 1) if reviews else 0.55
-    )
+    review_component = helpful_blocks / max(len(reviews), 1) if reviews else 0.55
     trust_component = float(trust.get("trust_score") or 0.5)
     noisy_penalty = min(0.25, 0.08 * noisy)
     score = 100.0 * (
@@ -90,9 +88,7 @@ def build_policy_scoreboard(
             k: {
                 "sessions": int(v["sessions"]),
                 "flow_minutes": round(v["flow_minutes"], 2),
-                "helpful_review_rate": round(
-                    v["helpful_reviews"] / max(v["reviews"], 1), 3
-                ),
+                "helpful_review_rate": round(v["helpful_reviews"] / max(v["reviews"], 1), 3),
             }
             for k, v in by_recipe.items()
         },

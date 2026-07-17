@@ -35,9 +35,7 @@ async def test_scoreboard_app_map_timeline_os_focus(tmp_path) -> None:  # type: 
         assert am.status_code == 200
         assert "map" in am.json()
 
-        set_r = await client.post(
-            "/app_map", json={"key": "customide", "category": "create"}
-        )
+        set_r = await client.post("/app_map", json={"key": "customide", "category": "create"})
         assert set_r.status_code == 200
         assert set_r.json()["ok"] is True
         assert set_r.json()["map"]["customide"] == "create"
@@ -54,9 +52,7 @@ async def test_scoreboard_app_map_timeline_os_focus(tmp_path) -> None:  # type: 
         assert of.status_code == 200
         assert "os_focus" in of.json()
 
-        of_set = await client.post(
-            "/os_focus", json={"enabled": True, "force_dry_run": True}
-        )
+        of_set = await client.post("/os_focus", json={"enabled": True, "force_dry_run": True})
         assert of_set.status_code == 200
         assert of_set.json()["os_focus"]["enabled"] is True
         assert of_set.json()["os_focus"]["mode"] == "dry_run"

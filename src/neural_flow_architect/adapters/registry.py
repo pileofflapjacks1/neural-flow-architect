@@ -23,7 +23,6 @@ def _default_fixture_path() -> Path:
     return candidates[0]
 
 
-
 def build_adapter(settings: Settings) -> BCIAdapter:
     name = settings.adapter
     if name == "simulator":

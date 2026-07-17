@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -11,13 +12,11 @@ from neural_flow_architect.adapters.replay import ReplayAdapter
 from neural_flow_architect.agent.architect import Architect
 from neural_flow_architect.core.types import (
     ContextSnapshot,
-    QualityFlags,
     UserPreferences,
     WorldSnapshot,
 )
 from neural_flow_architect.flow.engine import FlowEngine
 from neural_flow_architect.signal.features import FeatureExtractor
-from datetime import datetime
 
 
 @dataclass
@@ -106,9 +105,7 @@ async def run_offline_eval(
                     preferences=UserPreferences(),
                 )
                 decision = await architect.step(snap)
-                report.modes[decision.mode.value] = (
-                    report.modes.get(decision.mode.value, 0) + 1
-                )
+                report.modes[decision.mode.value] = report.modes.get(decision.mode.value, 0) + 1
                 if decision.mode.value == "protect":
                     report.protect_ticks += 1
                 for res in decision.results:

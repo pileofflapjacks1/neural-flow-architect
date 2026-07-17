@@ -3,6 +3,9 @@
 **Version 0.2.0 – Daily-driver foundation**  
 **Date: July 2026**
 
+> **Quality gates:** `pytest` · `ruff` · `pre-commit` · `./scripts/ci.sh`  
+> GitHub Actions workflow is ready under [`.github/workflows.pending/`](.github/workflows.pending/) — enable with a token that has the `workflow` scope (see that folder’s README).
+
 > A closed-loop, proactive AI co-pilot for high-bandwidth brain–computer interface (BCI) users — designed to detect, protect, deepen, and help re-enter **flow states**, then orchestrate digital and physical environments so meaningful work can continue with less friction.
 
 ```

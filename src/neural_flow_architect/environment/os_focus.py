@@ -63,9 +63,7 @@ class OSFocusController:
 
     def enable_focus(self) -> FocusBackendResult:
         if not self.enabled:
-            r = FocusBackendResult(
-                True, True, "null", "enable", "OS Focus integration disabled"
-            )
+            r = FocusBackendResult(True, True, "null", "enable", "OS Focus integration disabled")
             self.history.append("enable:disabled")
             return r
         if self.force_dry_run:
@@ -113,9 +111,7 @@ class OSFocusController:
         if system == "linux":
             return self._linux_restore()
         self.active = False
-        return FocusBackendResult(
-            True, True, system, "restore", "Platform unsupported"
-        )
+        return FocusBackendResult(True, True, system, "restore", "Platform unsupported")
 
     def _macos_enable(self) -> FocusBackendResult:
         # Best-effort: Shortcuts CLI if present (user must create "NFA Focus On")

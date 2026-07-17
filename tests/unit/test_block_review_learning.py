@@ -40,9 +40,7 @@ def test_session_applies_block_review_learning(tmp_path: Path) -> None:
     session = SessionController(Settings(adapter="simulator", data_dir=tmp_path))
     session._pending_block_review = {"session_id": "x", "prompt": "test"}
     before = session.profile.protect_engagement_threshold
-    out = session.submit_block_review(
-        helpful_block=False, architect_helpful=False, note="meh"
-    )
+    out = session.submit_block_review(helpful_block=False, architect_helpful=False, note="meh")
     assert out["ok"]
     assert out.get("learning")
     assert session.profile.protect_engagement_threshold >= before

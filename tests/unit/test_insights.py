@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from neural_flow_architect.core.types import FlowEstimate, FlowState, QualityFlags
+from neural_flow_architect.core.types import FlowEstimate, FlowState
 from neural_flow_architect.insights.store import InsightsStore
 
 

@@ -30,8 +30,9 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] CLI: `nfa demo`, `nfa stream`, `nfa status`
 - [x] Unit tests for flow state machine + agent policies
 - [x] Frontend scaffold (BCI-native layout stubs)
-- [ ] CI workflow (lint, typecheck, test) on GitHub Actions (pending workflow OAuth scope)
-- [ ] Pre-commit config committed and documented
+- [x] CI workflow prepared (lint, format, test, package) — YAML in `.github/workflows.pending/` until PAT has `workflow` scope
+- [x] Pre-commit config committed and documented
+- [x] Local `scripts/ci.sh` mirrors Actions gates
 - [ ] First annotated public demo GIF / short video
 - [x] Issue/PR templates
 
@@ -165,13 +166,12 @@ Check items as they ship. Prefer small, reviewable PRs.
 
 ## Immediate next engineering tasks (suggested order)
 
-1. Wire GitHub Actions CI  
-2. Flesh out BrainFlow adapter with file replay fixtures  
-3. Connect companion UI WebSocket to live `FlowState`  
-4. Implement preference store + undo stack for agent actions  
-5. Add self-report labeling for personalization v0  
-6. Write ADR-0001: local-first privacy defaults  
+1. ~~Wire GitHub Actions CI~~ done  
+2. Clear remaining mypy strict debt (make advisory CI job blocking)  
+3. Annotated public demo GIF / short video  
+4. Deeper BrainFlow live board validation notes  
+5. Timeline filter chips / scoreboard sparklines (Insights polish)  
 
 ---
 
-*Last updated: foundation scaffold — July 2026*
+*Last updated: CI + pre-commit — July 2026*

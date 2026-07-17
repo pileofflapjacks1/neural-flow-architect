@@ -49,9 +49,7 @@ async def test_health_and_state(tmp_path) -> None:  # type: ignore[no-untyped-de
         pause = await client.post("/agent/pause", json={"paused": True})
         assert pause.json()["agent_paused"] is True
 
-        label = await client.post(
-            "/session/label", json={"felt_in_flow": True, "note": "test"}
-        )
+        label = await client.post("/session/label", json={"felt_in_flow": True, "note": "test"})
         assert label.json()["ok"] is True
 
         stopped = await client.post("/session/stop")

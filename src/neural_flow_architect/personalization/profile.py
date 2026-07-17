@@ -40,11 +40,7 @@ class UserProfile:
         return cls(
             user_id=data.get("user_id", user_id),
             preferences=prefs,
-            protect_engagement_threshold=float(
-                data.get("protect_engagement_threshold", 0.62)
-            ),
-            deep_flow_engagement_threshold=float(
-                data.get("deep_flow_engagement_threshold", 0.82)
-            ),
+            protect_engagement_threshold=float(data.get("protect_engagement_threshold", 0.62)),
+            deep_flow_engagement_threshold=float(data.get("deep_flow_engagement_threshold", 0.82)),
             notes=str(data.get("notes", "")),
         )

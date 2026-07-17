@@ -113,9 +113,7 @@ class Architect:
                 explanations.append(explanation)
                 previous = self.digital.snapshot()
                 try:
-                    result = await spec.handler.run(
-                        snapshot, prop.params, dry_run=self.dry_run
-                    )
+                    result = await spec.handler.run(snapshot, prop.params, dry_run=self.dry_run)
                 except Exception as exc:  # noqa: BLE001
                     if self.on_agent_error is not None:
                         self.on_agent_error(exc)

@@ -6,11 +6,12 @@ import asyncio
 import time
 import tracemalloc
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
 from neural_flow_architect.adapters.replay import ReplayAdapter
+from neural_flow_architect.agent.architect import Architect
 from neural_flow_architect.core.failsafe import FailSafeGuard
-from neural_flow_architect.core.settings import Settings
 from neural_flow_architect.core.types import (
     ContextSnapshot,
     UserPreferences,
@@ -18,8 +19,6 @@ from neural_flow_architect.core.types import (
 )
 from neural_flow_architect.flow.engine import FlowEngine
 from neural_flow_architect.signal.features import FeatureExtractor
-from neural_flow_architect.agent.architect import Architect
-from datetime import datetime
 
 
 @dataclass
@@ -56,10 +55,9 @@ class SoakReport:
 
 def _rss_mb() -> float:
     try:
-        import resource
-
         # ru_maxrss is KB on Linux, bytes on macOS — normalize roughly
         import platform
+        import resource
 
         rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         if platform.system() == "Darwin":
@@ -89,9 +87,7 @@ async def run_soak(
         loop=True,
         realtime=False,
     )
-    features = FeatureExtractor(
-        sample_rate_hz=sample_rate_hz, window_sec=0.5, hop_sec=0.25
-    )
+    features = FeatureExtractor(sample_rate_hz=sample_rate_hz, window_sec=0.5, hop_sec=0.25)
     flow = FlowEngine()
     architect = Architect(dry_run=True)
     guard = FailSafeGuard(low_quality_streak=100)  # don't trip on synthetic noise lightly

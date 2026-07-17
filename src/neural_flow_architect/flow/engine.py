@@ -48,7 +48,9 @@ class FlowEngine:
         confidence = _confidence(quality, f)
 
         reasons: list[str] = []
-        new_state = self._transition(engagement, arousal_balance, self_ref, ease, confidence, reasons)
+        new_state = self._transition(
+            engagement, arousal_balance, self_ref, ease, confidence, reasons
+        )
         if new_state != self._state:
             self._state = new_state
             self._state_entered_ns = window.timestamp_ns
@@ -91,7 +93,9 @@ class FlowEngine:
 
         if current == FlowState.DEEP_FLOW:
             if engagement < self.deep_t - exit_m:
-                return FlowState.FLOW if engagement >= self.protect_t - exit_m else FlowState.POST_FLOW
+                return (
+                    FlowState.FLOW if engagement >= self.protect_t - exit_m else FlowState.POST_FLOW
+                )
             return FlowState.DEEP_FLOW
 
         if current == FlowState.FLOW:
@@ -101,7 +105,13 @@ class FlowEngine:
                 return FlowState.POST_FLOW if engagement > 0.4 else FlowState.LOW
             return FlowState.FLOW
 
-        if current in {FlowState.PRE_FLOW, FlowState.LOW, FlowState.POST_FLOW, FlowState.UNKNOWN, FlowState.FATIGUED}:
+        if current in {
+            FlowState.PRE_FLOW,
+            FlowState.LOW,
+            FlowState.POST_FLOW,
+            FlowState.UNKNOWN,
+            FlowState.FATIGUED,
+        }:
             if engagement >= self.deep_t and ease > 0.5:
                 return FlowState.DEEP_FLOW
             if engagement >= self.protect_t + enter:

@@ -13,7 +13,9 @@ class Tool(Protocol):
     impact: ImpactLevel
     description: str
 
-    async def run(self, snapshot: WorldSnapshot, params: dict[str, Any], *, dry_run: bool) -> ActionResult: ...
+    async def run(
+        self, snapshot: WorldSnapshot, params: dict[str, Any], *, dry_run: bool
+    ) -> ActionResult: ...
 
 
 @dataclass

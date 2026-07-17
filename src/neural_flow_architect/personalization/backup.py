@@ -9,7 +9,6 @@ from typing import Any
 
 from neural_flow_architect.personalization.profile import UserProfile
 
-
 EXPORT_VERSION = 1
 
 
@@ -55,12 +54,8 @@ def import_profile_bundle(directory: Path, bundle: dict[str, Any]) -> UserProfil
     profile = UserProfile(
         user_id=str(data.get("user_id") or "local"),
         preferences=prefs,
-        protect_engagement_threshold=float(
-            data.get("protect_engagement_threshold", 0.62)
-        ),
-        deep_flow_engagement_threshold=float(
-            data.get("deep_flow_engagement_threshold", 0.82)
-        ),
+        protect_engagement_threshold=float(data.get("protect_engagement_threshold", 0.62)),
+        deep_flow_engagement_threshold=float(data.get("deep_flow_engagement_threshold", 0.82)),
         notes=str(data.get("notes") or ""),
     )
     profile.save(directory)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from neural_flow_architect.core.active_app import categorize_app
-from neural_flow_architect.core.app_map import AppCategoryMap, VALID_CATEGORIES
+from neural_flow_architect.core.app_map import VALID_CATEGORIES, AppCategoryMap
 from neural_flow_architect.core.types import FlowEstimate, FlowState
 from neural_flow_architect.environment.os_focus import OSFocusController
 from neural_flow_architect.insights.scoreboard import build_policy_scoreboard

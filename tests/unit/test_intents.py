@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from neural_flow_architect.core.intents import IntentRouter, KNOWN_INTENTS
+from neural_flow_architect.core.intents import KNOWN_INTENTS, IntentRouter
 from neural_flow_architect.core.session import SessionController
 from neural_flow_architect.core.settings import Settings
 

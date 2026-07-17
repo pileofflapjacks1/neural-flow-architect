@@ -330,9 +330,7 @@ def create_app(
 
     @app.post("/os_focus")
     async def os_focus_post(body: OsFocusBody) -> dict[str, Any]:
-        return session.set_os_focus(
-            enabled=body.enabled, force_dry_run=body.force_dry_run
-        )
+        return session.set_os_focus(enabled=body.enabled, force_dry_run=body.force_dry_run)
 
     @app.get("/environment")
     async def environment() -> dict[str, Any]:
@@ -392,9 +390,7 @@ def create_app(
     @app.post("/intent")
     async def post_intent(body: IntentBody) -> dict[str, Any]:
         """Inject a discrete BCI-style intent (also used for accessibility testing)."""
-        return await session.inject_intent(
-            body.intent_type, body.confidence, body.payload
-        )
+        return await session.inject_intent(body.intent_type, body.confidence, body.payload)
 
     @app.get("/intents/vocabulary")
     async def intent_vocab() -> dict[str, Any]:
@@ -409,9 +405,7 @@ def create_app(
 
     @app.post("/input/command")
     async def multimodal_command(body: MultimodalBody) -> dict[str, Any]:
-        return await session.multimodal_command(
-            source=body.source, code=body.code, text=body.text
-        )
+        return await session.multimodal_command(source=body.source, code=body.code, text=body.text)
 
     @app.get("/a11y")
     async def get_a11y() -> dict[str, Any]:

@@ -82,9 +82,7 @@ class SessionSummary:
             "block_review": self.block_review.to_dict() if self.block_review else None,
             "timeline": self.timeline[-200:],
             "flow_minutes": sum(
-                v
-                for k, v in self.state_minutes.items()
-                if k in {"flow", "deep_flow", "pre_flow"}
+                v for k, v in self.state_minutes.items() if k in {"flow", "deep_flow", "pre_flow"}
             ),
         }
 
@@ -101,9 +99,7 @@ class InsightsStore:
     def current(self) -> SessionSummary | None:
         return self._current
 
-    def start_session(
-        self, adapter: str = "unknown", *, recipe: str = "study"
-    ) -> SessionSummary:
+    def start_session(self, adapter: str = "unknown", *, recipe: str = "study") -> SessionSummary:
         now = datetime.utcnow()
         self._current = SessionSummary(
             session_id=str(uuid4()),
@@ -124,9 +120,7 @@ class InsightsStore:
         if self._last_state is not None and self._last_ts is not None:
             delta_min = max(0.0, (now - self._last_ts).total_seconds() / 60.0)
             key = self._last_state.value
-            self._current.state_minutes[key] = (
-                self._current.state_minutes.get(key, 0.0) + delta_min
-            )
+            self._current.state_minutes[key] = self._current.state_minutes.get(key, 0.0) + delta_min
         # Timeline: only on state changes (keeps log small for long sessions)
         if self._last_state is None or estimate.state != self._last_state:
             self._append_timeline(
@@ -139,9 +133,7 @@ class InsightsStore:
             )
         self._last_state = estimate.state
         self._last_ts = now
-        self._current.peak_engagement = max(
-            self._current.peak_engagement, estimate.engagement
-        )
+        self._current.peak_engagement = max(self._current.peak_engagement, estimate.engagement)
 
     def observe_action(self, explanation_text: str, *, tool_id: str = "") -> None:
         if self._current is None:
@@ -235,9 +227,7 @@ class InsightsStore:
             now = datetime.utcnow()
             delta_min = max(0.0, (now - self._last_ts).total_seconds() / 60.0)
             key = self._last_state.value
-            self._current.state_minutes[key] = (
-                self._current.state_minutes.get(key, 0.0) + delta_min
-            )
+            self._current.state_minutes[key] = self._current.state_minutes.get(key, 0.0) + delta_min
         self._current.ended_at = datetime.utcnow()
         summary = self._current
         if persist:

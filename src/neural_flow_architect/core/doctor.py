@@ -76,9 +76,7 @@ def run_doctor() -> DoctorReport:
 
         settings.adapter = "simulator"
         adapter = build_adapter(settings)
-        report.checks.append(
-            CheckResult("adapter_simulator", True, f"built {adapter.name}")
-        )
+        report.checks.append(CheckResult("adapter_simulator", True, f"built {adapter.name}"))
     except Exception as exc:  # noqa: BLE001
         report.checks.append(CheckResult("adapter_simulator", False, str(exc)))
 

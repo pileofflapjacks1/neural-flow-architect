@@ -30,9 +30,7 @@ class PersonalFlowSignature:
             "sessions_considered": self.sessions_considered,
             "positive_labels": self.positive_labels,
             "total_labels": self.total_labels,
-            "label_positive_rate": round(
-                self.positive_labels / max(self.total_labels, 1), 3
-            ),
+            "label_positive_rate": round(self.positive_labels / max(self.total_labels, 1), 3),
             "best_hours": self.best_hours,
             "best_recipes": self.best_recipes,
             "avg_peak_engagement": round(self.avg_peak_engagement, 3),
@@ -101,11 +99,7 @@ def build_personal_signature(
 
     def top_keys(d: dict[Any, list[float]], n: int = 3) -> list[Any]:
         ranked = sorted(
-            (
-                (k, vals)
-                for k, vals in d.items()
-                if vals and max(vals) > 0
-            ),
+            ((k, vals) for k, vals in d.items() if vals and max(vals) > 0),
             key=lambda kv: sum(kv[1]) / max(len(kv[1]), 1),
             reverse=True,
         )

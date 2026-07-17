@@ -18,8 +18,7 @@ def propose_transition(snapshot: WorldSnapshot) -> list[ActionProposal]:
             impact=ImpactLevel.LOW,
             params={},
             score=0.75,
-            causes=causes
-            + [{"signal": "reason", "value": "restore awareness after flow"}],
+            causes=causes + [{"signal": "reason", "value": "restore awareness after flow"}],
         ),
         ActionProposal(
             tool_id="focus.disable",

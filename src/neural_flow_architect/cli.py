@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -73,8 +72,7 @@ def status() -> None:
         table.add_row(k, v)
     console.print(table)
     console.print(
-        "[dim]Neural data defaults to local processing. "
-        "See docs/privacy/PRIVACY_ETHICS.md[/]"
+        "[dim]Neural data defaults to local processing. See docs/privacy/PRIVACY_ETHICS.md[/]"
     )
 
 
@@ -90,9 +88,7 @@ def soak(
     from neural_flow_architect.eval.soak import run_soak_sync
 
     _banner()
-    console.print(
-        f"[green]Soak test[/] simulated_duration={duration}s channels={channels}"
-    )
+    console.print(f"[green]Soak test[/] simulated_duration={duration}s channels={channels}")
     report = run_soak_sync(
         duration_sec=duration, channels=channels, memory_limit_mb=memory_limit_mb
     )
@@ -113,7 +109,7 @@ def soak(
 
 @app.command()
 def report(
-    data_dir: Optional[str] = typer.Option(None, help="Override data directory"),
+    data_dir: str | None = typer.Option(None, help="Override data directory"),
     as_json: bool = typer.Option(False, "--json", help="Machine-readable JSON output"),
 ) -> None:
     """Print local trust + policy scoreboard (no raw neural data)."""
@@ -158,9 +154,7 @@ def report(
         table.add_row(k, str(t.get(k, "—")))
     console.print(table)
     sb = scoreboard
-    console.print(
-        f"[cyan]Policy score:[/] {sb.get('score')} — {sb.get('interpretation')}"
-    )
+    console.print(f"[cyan]Policy score:[/] {sb.get('score')} — {sb.get('interpretation')}")
     console.print(f"[dim]Sessions on disk: {len(sessions)}[/]")
     if sessions:
         s0 = sessions[0]
@@ -223,8 +217,8 @@ def doctor() -> None:
 @app.command()
 def start(
     adapter: str = typer.Option("simulator", help="simulator|replay|neuralink_stub|brainflow"),
-    host: Optional[str] = typer.Option(None, help="API host"),
-    port: Optional[int] = typer.Option(None, help="API port"),
+    host: str | None = typer.Option(None, help="API host"),
+    port: int | None = typer.Option(None, help="API port"),
     open_browser: bool = typer.Option(False, "--open/--no-open", help="Open companion UI URL"),
     with_ui: bool = typer.Option(
         False, "--with-ui/--no-with-ui", help="Also launch Vite companion UI if npm is available"
@@ -334,9 +328,7 @@ def demo(
 
 @app.command()
 def stream(
-    adapter: Optional[str] = typer.Option(
-        None, help="simulator|replay|brainflow|neuralink_stub"
-    ),
+    adapter: str | None = typer.Option(None, help="simulator|replay|brainflow|neuralink_stub"),
     duration: float = typer.Option(0.0, help="Seconds (0 = until Ctrl+C)"),
     dry_run: bool = typer.Option(False, help="Dry-run agent effectors"),
 ) -> None:
@@ -364,9 +356,7 @@ def bench(
     from neural_flow_architect.eval.latency import run_latency_bench
 
     _banner()
-    console.print(
-        f"[green]Latency bench[/] channels={channels} iterations={iterations}"
-    )
+    console.print(f"[green]Latency bench[/] channels={channels} iterations={iterations}")
 
     async def _run():
         return await run_latency_bench(
@@ -394,9 +384,7 @@ def bench(
             "✓" if ok else "✗",
         )
     console.print(table)
-    console.print(
-        f"[dim]all_pass={data['all_pass']} n_channels={data['n_channels']}[/]"
-    )
+    console.print(f"[dim]all_pass={data['all_pass']} n_channels={data['n_channels']}[/]")
     console.print("[dim]See docs/architecture/LATENCY_BUDGET.md[/]")
 
 
@@ -404,7 +392,7 @@ def bench(
 def eval_cmd(
     duration: float = typer.Option(20.0, help="Simulated seconds of offline replay"),
     recipe: str = typer.Option("study", help="Environment recipe context"),
-    trajectory: Optional[str] = typer.Option(None, help="Path to trajectory JSON"),
+    trajectory: str | None = typer.Option(None, help="Path to trajectory JSON"),
 ) -> None:
     """Run offline evaluation harness (no server/hardware)."""
     from pathlib import Path
@@ -440,8 +428,8 @@ def eval_cmd(
 
 @app.command()
 def serve(
-    host: Optional[str] = typer.Option(None, help="Bind host (default 127.0.0.1)"),
-    port: Optional[int] = typer.Option(None, help="Bind port (default 8741)"),
+    host: str | None = typer.Option(None, help="Bind host (default 127.0.0.1)"),
+    port: int | None = typer.Option(None, help="Bind port (default 8741)"),
     adapter: str = typer.Option("simulator", help="simulator|replay|brainflow|neuralink_stub"),
     dry_run: bool = typer.Option(False, help="Dry-run agent effectors"),
 ) -> None:

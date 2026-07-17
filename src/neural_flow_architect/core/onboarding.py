@@ -8,7 +8,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-
 ONBOARDING_STEPS = (
     "welcome",
     "privacy",
@@ -64,9 +63,7 @@ class OnboardingState:
         if self.current_step not in self.completed_steps:
             self.completed_steps.append(self.current_step)
         self.current_step = step
-        if step == "ready" or (
-            set(ONBOARDING_STEPS[:-1]).issubset(set(self.completed_steps))
-        ):
+        if step == "ready" or (set(ONBOARDING_STEPS[:-1]).issubset(set(self.completed_steps))):
             if step == "ready":
                 self.completed = True
                 if "ready" not in self.completed_steps:

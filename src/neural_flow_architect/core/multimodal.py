@@ -9,7 +9,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-
 # Keyboard shortcuts (UI + documented for OS accessibility tools)
 DEFAULT_KEYMAP: dict[str, str] = {
     "KeyP": "pause_agent",  # also toggled in UI
@@ -89,7 +88,9 @@ def keymap_for_ui() -> list[dict[str, str]]:
     return out
 
 
-def parse_keyboard(code: str, *, shift: bool = False, alt: bool = False, meta: bool = False) -> ParsedCommand | None:
+def parse_keyboard(
+    code: str, *, shift: bool = False, alt: bool = False, meta: bool = False
+) -> ParsedCommand | None:
     """Map KeyboardEvent.code-style strings to intents. Prefer unmodified keys."""
     if shift or alt or meta:
         # Avoid fighting browser/OS chords; only plain keys

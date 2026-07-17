@@ -41,9 +41,7 @@ class ConsentRecord:
 
 @dataclass
 class ConsentManager:
-    grants: dict[ConsentScope, bool] = field(
-        default_factory=lambda: dict(DEFAULT_GRANTS)
-    )
+    grants: dict[ConsentScope, bool] = field(default_factory=lambda: dict(DEFAULT_GRANTS))
     history: list[ConsentRecord] = field(default_factory=list)
 
     def allows(self, scope: ConsentScope | str) -> bool:

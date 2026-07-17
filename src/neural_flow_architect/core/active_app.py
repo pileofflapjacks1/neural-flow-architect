@@ -143,8 +143,8 @@ def _windows_frontmost() -> AppContext:
     ps = (
         "Add-Type @'"
         "using System; using System.Runtime.InteropServices; "
-        "public class F { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
-        "[DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder t, int c); }"
+        'public class F { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); '
+        '[DllImport("user32.dll")] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder t, int c); }'
         "'@; $h=[F]::GetForegroundWindow(); $t=New-Object System.Text.StringBuilder 256; "
         "[void][F]::GetWindowText($h,$t,256); $t.ToString()"
     )
@@ -191,7 +191,5 @@ def recipe_suggestion(
         "suggested_recipe": hint,
         "from_category": app_category,
         "current_recipe": current_recipe,
-        "message": (
-            f"You seem to be in a {app_category} app — switch recipe to {hint}?"
-        ),
+        "message": (f"You seem to be in a {app_category} app — switch recipe to {hint}?"),
     }

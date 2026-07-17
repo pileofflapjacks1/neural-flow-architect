@@ -106,7 +106,18 @@ src = ["src", "tests", "scripts", "prototypes"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "N"]
-ignore = ["E501"]
+ignore = [
+  "E501",   # line length handled by formatter
+  "UP042",  # (str, Enum) still fine; StrEnum migration is optional
+  "SIM102", # nested if often clearer for policy branches
+  "SIM105", # try/except pass is explicit for best-effort OS hooks
+  "SIM108", # ternary not always clearer for I/O branches
+  "N806",   # BrainFlow class names (BoardShim, etc.)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["N802", "N803"]
+"prototypes/**" = ["E402", "F401"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -115,12 +126,26 @@ warn_return_any = true
 warn_unused_configs = true
 mypy_path = "src"
 packages = ["neural_flow_architect"]
+# Incremental: CI reports mypy but does not block merges until debt is cleared.
+# Run `mypy src` locally when touching typed public APIs.
+
+[[tool.mypy.overrides]]
+module = [
+  "brainflow",
+  "brainflow.*",
+  "homeassistant_api",
+  "homeassistant_api.*",
+]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q --strict-markers"
+filterwarnings = [
+  "ignore::DeprecationWarning",
+]
 markers = [
   "integration: integration tests requiring optional hardware/backends",
   "slow: longer-running tests",

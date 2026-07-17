@@ -56,7 +56,7 @@ Nothing leaves the machine unless the user explicitly enables a non-default path
 - [x] IoT off + force dry-run default  
 - [x] Fail-safe pause always available  
 - [x] Profile export contains no raw neural samples  
-- [ ] CI enforces tests on every PR (enable when workflow OAuth scope available)  
+- [x] CI enforces lint + tests on every PR (`.github/workflows/ci.yml`)  
 
 ## Reporting
 

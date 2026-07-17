@@ -1,9 +1,9 @@
 """Multimodal keyboard/voice parsing tests."""
 
 from neural_flow_architect.core.multimodal import (
+    keymap_for_ui,
     parse_keyboard,
     parse_voice_text,
-    keymap_for_ui,
 )
 
 

@@ -8,7 +8,6 @@ from typing import Any
 from neural_flow_architect.adapters.base import BCIAdapter
 from neural_flow_architect.core.types import NeuralFrame, StreamMetadata
 
-
 REQUIRED_METHODS = (
     "connect",
     "disconnect",

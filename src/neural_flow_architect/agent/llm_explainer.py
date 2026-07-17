@@ -158,7 +158,6 @@ async def maybe_llm_explain(
     return Explanation(
         action=template.action,
         text=rewritten,
-        because=template.because
-        + [{"signal": "wording", "value": "local_llm"}],
+        because=template.because + [{"signal": "wording", "value": "local_llm"}],
         timestamp=template.timestamp,
     )

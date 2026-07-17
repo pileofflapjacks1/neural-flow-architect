@@ -6,11 +6,11 @@ etc.). No raw neural decoding lives here — only named intent events.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 from neural_flow_architect.core.types import IntentEvent
-
 
 # Stable intent vocabulary for adapters (Neuralink-ready surface)
 KNOWN_INTENTS = frozenset(
@@ -108,7 +108,9 @@ class IntentRouter:
         result = await self._dispatch(intent, event.payload)
         return self._record(result)
 
-    async def handle_raw(self, intent_type: str, confidence: float = 1.0, payload: dict | None = None) -> IntentActionResult:
+    async def handle_raw(
+        self, intent_type: str, confidence: float = 1.0, payload: dict | None = None
+    ) -> IntentActionResult:
         return await self.handle(
             IntentEvent(
                 seq=0,
@@ -128,7 +130,9 @@ class IntentRouter:
             return IntentActionResult(intent, True, "Architect resumed", out)
         if intent == "undo":
             out = self.sink.undo()
-            return IntentActionResult(intent, bool(out.get("ok")), out.get("result", {}).get("message", "undo"), out)
+            return IntentActionResult(
+                intent, bool(out.get("ok")), out.get("result", {}).get("message", "undo"), out
+            )
         if intent == "rest_mode":
             out = self.sink.rest_mode()
             return IntentActionResult(intent, True, "Rest mode", out)
@@ -141,9 +145,7 @@ class IntentRouter:
         if intent.startswith("recipe_"):
             recipe = intent.replace("recipe_", "", 1)
             out = self.sink.set_recipe(recipe)
-            return IntentActionResult(
-                intent, bool(out.get("ok")), f"Recipe {recipe}", out
-            )
+            return IntentActionResult(intent, bool(out.get("ok")), f"Recipe {recipe}", out)
         if intent == "start_session":
             out = await self.sink.start()
             return IntentActionResult(intent, bool(out.get("ok")), out.get("message", "start"), out)

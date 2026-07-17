@@ -87,9 +87,7 @@ class PhysicalOrchestrator:
                 "Content-Type": "application/json",
             }
             async with httpx.AsyncClient(timeout=5.0) as client:
-                resp = await client.post(
-                    url, headers=headers, json={"entity_id": f"scene.{scene}"}
-                )
+                resp = await client.post(url, headers=headers, json={"entity_id": f"scene.{scene}"})
             ok = resp.status_code < 300
             self.live_calls += 1
             if not ok:

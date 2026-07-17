@@ -40,9 +40,7 @@ def test_block_review_and_caregiver(tmp_path: Path) -> None:
         "session_id": "abc",
         "prompt": "Was this work block helpful?",
     }
-    out = session.submit_block_review(
-        helpful_block=True, architect_helpful=True, note="great"
-    )
+    out = session.submit_block_review(helpful_block=True, architect_helpful=True, note="great")
     assert out["ok"]
     assert session._pending_block_review is None
     assert session.caregiver.items.get("label_or_review") is True

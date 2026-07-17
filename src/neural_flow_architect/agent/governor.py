@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 from collections import deque
 from collections.abc import Callable
-from typing import Any
 
 from neural_flow_architect.core.types import ActionProposal, ImpactLevel, WorldSnapshot
 
@@ -81,9 +80,7 @@ class Governor:
         return allowed
 
     def penalize_cooldown(self, tool_id: str, extra_sec: float = 90.0) -> None:
-        self._extra_cooldown[tool_id] = max(
-            self._extra_cooldown.get(tool_id, 0.0), extra_sec
-        )
+        self._extra_cooldown[tool_id] = max(self._extra_cooldown.get(tool_id, 0.0), extra_sec)
 
     def record(self, tool_id: str, impact: ImpactLevel) -> None:
         now = time.time()

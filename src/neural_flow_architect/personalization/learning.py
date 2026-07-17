@@ -129,12 +129,16 @@ def learn_from_block_review(
 
     if helpful_block is True:
         # Successful work block — slightly easier entry next time
-        protect = 0.9 * protect + 0.1 * max(0.4, peak_engagement - 0.1 if peak_engagement else protect)
+        protect = 0.9 * protect + 0.1 * max(
+            0.4, peak_engagement - 0.1 if peak_engagement else protect
+        )
         if recipe:
             prefs.preferred_recipe = recipe
         messages.append("Helpful block noted — gently eased flow entry thresholds.")
         if architect_helpful is True:
-            prefs.protect_style = "assertive" if prefs.protect_style == "assertive" else prefs.protect_style
+            prefs.protect_style = (
+                "assertive" if prefs.protect_style == "assertive" else prefs.protect_style
+            )
             # Mild assertiveness only if already undo-light
             if actions_count > 0 and undos_count / max(actions_count, 1) < 0.15:
                 if prefs.protect_style == "calm":
@@ -144,16 +148,12 @@ def learn_from_block_review(
         elif architect_helpful is False:
             prefs.protect_style = "calm"
             protect = min(0.9, protect + step)  # need stronger signal before acting
-            messages.append(
-                "Block was OK but co-pilot was noisy — switched to calm protect style."
-            )
+            messages.append("Block was OK but co-pilot was noisy — switched to calm protect style.")
     elif helpful_block is False:
         protect = min(0.92, protect + step * 1.5)
         deep = min(0.96, deep + step)
         prefs.protect_style = "calm"
-        messages.append(
-            "Unhelpful block — raised thresholds and calmed protect style."
-        )
+        messages.append("Unhelpful block — raised thresholds and calmed protect style.")
         if architect_helpful is False:
             messages.append("Architect marked unhelpful — fewer medium actions preferred.")
 

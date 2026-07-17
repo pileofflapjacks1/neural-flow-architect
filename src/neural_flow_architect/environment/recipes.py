@@ -7,7 +7,6 @@ from typing import Any
 
 from neural_flow_architect.environment.digital import DigitalOrchestrator
 
-
 RECIPES = ("study", "create", "rest", "social")
 
 
@@ -78,7 +77,4 @@ def apply_recipe(digital: DigitalOrchestrator, recipe: str) -> dict[str, Any]:
 
 
 def list_recipes() -> list[dict[str, str]]:
-    return [
-        {"name": s.name, "description": s.description}
-        for s in RECIPE_SPECS.values()
-    ]
+    return [{"name": s.name, "description": s.description} for s in RECIPE_SPECS.values()]

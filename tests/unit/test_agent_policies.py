@@ -75,4 +75,7 @@ async def test_architect_step_emits_explanation() -> None:
     assert decision.mode == AgentMode.PROTECT
     assert decision.explanations or decision.results
     if decision.explanations:
-        assert "engagement" in decision.explanations[0].text.lower() or "flow" in decision.explanations[0].text.lower()
+        assert (
+            "engagement" in decision.explanations[0].text.lower()
+            or "flow" in decision.explanations[0].text.lower()
+        )

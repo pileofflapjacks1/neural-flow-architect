@@ -44,10 +44,7 @@ def compute_trust_metrics(
     deny_penalty = min(0.3, 0.05 * len(denied_tools))
 
     trust = (
-        0.45 * undo_score
-        + 0.45 * feedback_score
-        + 0.10 * (1.0 - failsafe_penalty)
-        - deny_penalty
+        0.45 * undo_score + 0.45 * feedback_score + 0.10 * (1.0 - failsafe_penalty) - deny_penalty
     )
     trust = float(max(0.0, min(1.0, trust)))
 
