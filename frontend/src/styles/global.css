@@ -399,6 +399,86 @@ code {
   font-size: 0.9em;
 }
 
+.voice-bar {
+  width: min(560px, 100%);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.voice-input {
+  min-height: var(--target-min, 64px);
+  min-width: min(280px, 70vw);
+  font-size: 1.05rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  border: 2px solid #4a5670;
+  background: #141a28;
+  color: var(--text);
+}
+
+.voice-input:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.a11y-panel {
+  width: min(520px, 100%);
+  text-align: left;
+}
+
+.a11y-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+.a11y-row input[type="range"] {
+  flex: 1;
+  min-width: 160px;
+}
+
+.a11y-row input[type="number"] {
+  width: 6rem;
+  min-height: 48px;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid #4a5670;
+  background: #141a28;
+  color: var(--text);
+  padding: 0.35rem 0.5rem;
+}
+
+.a11y-row input[type="checkbox"] {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.app-shell.high-contrast,
+html.nfa-high-contrast body {
+  --bg: #000;
+  --surface: #111;
+  --text: #fff;
+  --muted: #ddd;
+  --accent: #7ec8ff;
+  --good: #5dff9a;
+}
+
+html.nfa-reduced-motion *,
+.app-shell.high-contrast * {
+  scroll-behavior: auto;
+}
+
+/* Scale targets from a11y css vars when set */
+.target-btn {
+  min-width: var(--target-min, 64px);
+  min-height: var(--target-min, 64px);
+}
+
+
 
 
 

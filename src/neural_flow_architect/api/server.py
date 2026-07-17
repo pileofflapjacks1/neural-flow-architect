@@ -67,6 +67,27 @@ class IntentBody(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+class A11yBody(BaseModel):
+    ui_scale: float | None = None
+    high_contrast: bool | None = None
+    reduced_motion: bool | None = None
+    dwell_ms: int | None = None
+    sticky_controls: bool | None = None
+    keyboard_enabled: bool | None = None
+    voice_command_bar: bool | None = None
+    auto_start_on_preset: bool | None = None
+
+
+class MultimodalBody(BaseModel):
+    source: str = Field(description="keyboard | voice | text")
+    code: str | None = None  # KeyboardEvent.code
+    text: str | None = None
+
+
+class ImportBody(BaseModel):
+    bundle: dict[str, Any]
+
+
 def create_app(
     settings: Settings | None = None,
     controller: SessionController | None = None,
@@ -227,11 +248,35 @@ def create_app(
     @app.get("/intents/vocabulary")
     async def intent_vocab() -> dict[str, Any]:
         from neural_flow_architect.core.intents import KNOWN_INTENTS
+        from neural_flow_architect.core.multimodal import keymap_for_ui
 
         return {
             "intents": sorted(KNOWN_INTENTS),
+            "shortcuts": keymap_for_ui(),
             "note": "Stable control vocabulary for future implant intent APIs",
         }
+
+    @app.post("/input/command")
+    async def multimodal_command(body: MultimodalBody) -> dict[str, Any]:
+        return await session.multimodal_command(
+            source=body.source, code=body.code, text=body.text
+        )
+
+    @app.get("/a11y")
+    async def get_a11y() -> dict[str, Any]:
+        return {"a11y": session._a11y_payload()}
+
+    @app.post("/a11y")
+    async def post_a11y(body: A11yBody) -> dict[str, Any]:
+        return session.update_a11y(**body.model_dump(exclude_none=True))
+
+    @app.get("/profile/export")
+    async def export_profile() -> dict[str, Any]:
+        return session.export_profile()
+
+    @app.post("/profile/import")
+    async def import_profile(body: ImportBody) -> dict[str, Any]:
+        return session.import_profile(body.bundle)
 
     @app.get("/features")
     async def feature_flags() -> dict[str, Any]:

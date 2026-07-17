@@ -30,8 +30,10 @@ class FeatureExtractor:
         self.window_samples = max(int(window_sec * sample_rate_hz), 8)
         self.hop_samples = max(int(hop_sec * sample_rate_hz), 1)
         self.include_connectivity = include_connectivity
-        self._buffer: deque[NDArray[np.float64]] = deque()
-        self._quality_buffer: deque[QualityFlags] = deque()
+        # Cap buffered chunks so multi-hour sessions cannot grow unbounded
+        self._max_chunks = 64
+        self._buffer: deque[NDArray[np.float64]] = deque(maxlen=self._max_chunks)
+        self._quality_buffer: deque[QualityFlags] = deque(maxlen=self._max_chunks)
         self._buffered_samples = 0
 
     def reset(self) -> None:
@@ -40,9 +42,22 @@ class FeatureExtractor:
         self._buffered_samples = 0
 
     def push(self, frame: NeuralFrame) -> list[FeatureWindow]:
+        # If maxlen drops oldest chunk, recompute sample count
+        prev_len = len(self._buffer)
         self._buffer.append(frame.data)
         self._quality_buffer.append(frame.quality)
-        self._buffered_samples += frame.data.shape[1]
+        if len(self._buffer) == prev_len and prev_len == self._max_chunks:
+            # oldest was evicted — recount
+            self._buffered_samples = sum(c.shape[1] for c in self._buffer)
+        else:
+            self._buffered_samples += frame.data.shape[1]
+        # Hard safety: never keep more than ~4 windows of samples
+        max_samples = self.window_samples * 4
+        while self._buffered_samples > max_samples and self._buffer:
+            dropped = self._buffer.popleft()
+            if self._quality_buffer:
+                self._quality_buffer.popleft()
+            self._buffered_samples -= dropped.shape[1]
         windows: list[FeatureWindow] = []
         while self._buffered_samples >= self.window_samples:
             window = self._assemble_window()

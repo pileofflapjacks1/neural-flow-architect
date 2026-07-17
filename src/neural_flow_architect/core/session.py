@@ -59,6 +59,9 @@ class SessionController:
         self._latest: dict[str, Any] = self._idle_state()
         self._lock = asyncio.Lock()
         self._last_intent_result: dict[str, Any] | None = None
+        self._tick_count = 0
+        self._session_started_at: datetime | None = None
+        self._last_checkpoint_at: datetime | None = None
 
     def _new_runtime(self) -> NeuralFlowRuntime:
         rt = NeuralFlowRuntime(
@@ -145,12 +148,37 @@ class SessionController:
             "active_preset": self.profile.preferences.active_preset,
             "onboarding_completed": self.onboarding.completed,
             "last_intent": None,
+            "a11y": self._a11y_payload(),
+            "session_health": {
+                "tick_count": 0,
+                "uptime_sec": 0.0,
+                "heartbeat_ok": True,
+            },
+            "shortcuts": [],
             "help": {
                 "user_guide": "docs/ux/USER_GUIDE.md",
                 "pause": "Pause always stops proactive actions",
                 "undo": "Undo reverses the last environment change",
+                "keyboard": "P pause · U undo · R rest · S start · Y/N labels",
             },
             "ts": datetime.utcnow().isoformat(),
+        }
+
+    def _a11y_payload(self) -> dict[str, Any]:
+        p = self.profile.preferences
+        return {
+            "ui_scale": p.ui_scale,
+            "high_contrast": p.high_contrast,
+            "reduced_motion": p.reduced_motion,
+            "dwell_ms": p.dwell_ms,
+            "sticky_controls": p.sticky_controls,
+            "keyboard_enabled": p.keyboard_enabled,
+            "voice_command_bar": p.voice_command_bar,
+            "auto_start_on_preset": p.auto_start_on_preset,
+            "css": {
+                "--nfa-scale": str(p.ui_scale),
+                "--target-min": f"{int(64 * p.ui_scale)}px",
+            },
         }
 
     def subscribe(self) -> asyncio.Queue[dict[str, Any]]:
@@ -199,6 +227,9 @@ class SessionController:
             def on_tick(tick: RuntimeTick) -> None:
                 self._on_tick(tick)
 
+            self._tick_count = 0
+            self._session_started_at = datetime.utcnow()
+            self._last_checkpoint_at = self._session_started_at
             self._task = asyncio.create_task(
                 self.runtime.run(duration_sec=duration_sec, on_tick=on_tick),
                 name="nfa-session-loop",
@@ -270,6 +301,8 @@ class SessionController:
             return {"ok": True, "message": "Session stopped", "state": self._latest}
 
     def _on_tick(self, tick: RuntimeTick) -> None:
+        from neural_flow_architect.core.multimodal import keymap_for_ui
+
         explanation = None
         explanations = []
         if tick.decision.explanations:
@@ -284,6 +317,23 @@ class SessionController:
             signal = "degraded"
         else:
             signal = "good"
+        self._tick_count += 1
+        now = datetime.utcnow()
+        uptime = (
+            (now - self._session_started_at).total_seconds()
+            if self._session_started_at
+            else 0.0
+        )
+        # Periodic soft checkpoint of live session summary (still local)
+        checkpoint_every = max(30.0, float(self.settings.session_checkpoint_sec))
+        if (
+            self._last_checkpoint_at is None
+            or (now - self._last_checkpoint_at).total_seconds() >= checkpoint_every
+        ):
+            self._last_checkpoint_at = now
+            # snapshot is already in-memory; also refresh profile mtime for crash recovery UX
+            self.profile.save(self.settings.data_dir / "profiles")
+
         state = {
             "running": True,
             "agent_paused": self.profile.preferences.agent_paused,
@@ -314,8 +364,18 @@ class SessionController:
             "active_preset": self.profile.preferences.active_preset,
             "onboarding_completed": self.onboarding.completed,
             "last_intent": self._latest.get("last_intent"),
+            "a11y": self._a11y_payload(),
+            "session_health": {
+                "tick_count": self._tick_count,
+                "uptime_sec": round(uptime, 1),
+                "heartbeat_ok": True,
+                "last_checkpoint": self._last_checkpoint_at.isoformat()
+                if self._last_checkpoint_at
+                else None,
+            },
+            "shortcuts": keymap_for_ui(),
             "help": self._idle_state()["help"],
-            "ts": datetime.utcnow().isoformat(),
+            "ts": now.isoformat(),
         }
         self._publish(state)
 
@@ -355,7 +415,120 @@ class SessionController:
         state["simple_mode"] = preset.simple_mode
         state["context"] = self.context_for_runtime().model_dump()
         self._publish(state)
-        return {"ok": True, "preset": preset.to_dict(), "state": state}
+        result: dict[str, Any] = {"ok": True, "preset": preset.to_dict(), "state": state}
+        if self.profile.preferences.auto_start_on_preset and not self.is_running:
+            result["auto_start_suggested"] = True
+        return result
+
+    def update_a11y(self, **kwargs: Any) -> dict[str, Any]:
+        prefs = self.profile.preferences
+        allowed = {
+            "ui_scale",
+            "high_contrast",
+            "reduced_motion",
+            "dwell_ms",
+            "sticky_controls",
+            "keyboard_enabled",
+            "voice_command_bar",
+            "auto_start_on_preset",
+        }
+        for key, val in kwargs.items():
+            if key in allowed and val is not None:
+                setattr(prefs, key, val)
+        self.profile.save(self.settings.data_dir / "profiles")
+        state = self.get_state()
+        state["a11y"] = self._a11y_payload()
+        state["preferences"] = prefs.model_dump()
+        self._publish(state)
+        return {"ok": True, "a11y": state["a11y"], "state": state}
+
+    def export_profile(self) -> dict[str, Any]:
+        from neural_flow_architect.personalization.backup import (
+            export_profile_bundle,
+            write_export,
+        )
+
+        sessions = self.list_sessions()[:10]
+        # Strip explanations to keep export small; keep labels/stats
+        meta = [
+            {
+                "session_id": s.get("session_id"),
+                "started_at": s.get("started_at"),
+                "peak_engagement": s.get("peak_engagement"),
+                "flow_minutes": s.get("flow_minutes"),
+                "actions_count": s.get("actions_count"),
+            }
+            for s in sessions
+        ]
+        bundle = export_profile_bundle(
+            self.profile,
+            onboarding=self.onboarding.to_dict(),
+            include_sessions_meta=meta,
+        )
+        path = (
+            self.settings.data_dir
+            / "exports"
+            / f"profile_{self.profile.user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        write_export(path, bundle)
+        return {"ok": True, "path": str(path), "bundle": bundle}
+
+    def import_profile(self, bundle: dict[str, Any]) -> dict[str, Any]:
+        from neural_flow_architect.personalization.backup import import_profile_bundle
+
+        self.profile = import_profile_bundle(
+            self.settings.data_dir / "profiles", bundle
+        )
+        self._recipe = self.profile.preferences.preferred_recipe or "study"
+        if bundle.get("onboarding"):
+            from neural_flow_architect.core.onboarding import OnboardingState
+
+            ob = bundle["onboarding"]
+            self.onboarding = OnboardingState(
+                completed=bool(ob.get("completed", False)),
+                current_step=str(ob.get("current_step", "welcome")),
+                completed_steps=list(ob.get("completed_steps") or []),
+                simple_mode=bool(ob.get("simple_mode", True)),
+                chosen_preset=ob.get("chosen_preset"),
+                caregiver_assisted=bool(ob.get("caregiver_assisted", False)),
+            )
+            self.onboarding.save(self.settings.data_dir / "profiles" / "onboarding.json")
+        self.runtime.flow.protect_t = self.profile.protect_engagement_threshold
+        self.runtime.flow.deep_t = self.profile.deep_flow_engagement_threshold
+        state = self.get_state()
+        state["preferences"] = self.profile.preferences.model_dump()
+        state["a11y"] = self._a11y_payload()
+        state["simple_mode"] = self.profile.preferences.simple_mode
+        self._publish(state)
+        return {"ok": True, "state": state}
+
+    async def multimodal_command(
+        self,
+        *,
+        source: str,
+        code: str | None = None,
+        text: str | None = None,
+    ) -> dict[str, Any]:
+        from neural_flow_architect.core.multimodal import parse_keyboard, parse_voice_text
+
+        parsed = None
+        if source == "keyboard" and code:
+            if not self.profile.preferences.keyboard_enabled:
+                return {"ok": False, "message": "Keyboard control disabled in a11y settings"}
+            parsed = parse_keyboard(code)
+        elif source in {"voice", "text"} and text:
+            parsed = parse_voice_text(text)
+        if parsed is None:
+            return {"ok": False, "message": "Unrecognized command", "source": source}
+        result = await self.inject_intent(
+            parsed.intent_type, confidence=parsed.confidence, payload={"source": parsed.source, "raw": parsed.raw}
+        )
+        result["parsed"] = {
+            "intent": parsed.intent_type,
+            "source": parsed.source,
+            "raw": parsed.raw,
+        }
+        return result
 
     def get_onboarding(self) -> dict[str, Any]:
         return self.onboarding.copy_for_ui()

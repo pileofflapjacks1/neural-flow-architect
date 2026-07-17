@@ -74,11 +74,17 @@ class Settings(BaseSettings):
     loop_hz: float = 4.0
     include_connectivity: bool = False
 
+    # Long-session stability
+    session_checkpoint_sec: float = 120.0  # periodic in-memory snapshot flush interval
+    max_undo_stack: int = 32
+
     def ensure_data_dirs(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         (self.data_dir / "sessions").mkdir(exist_ok=True)
         (self.data_dir / "profiles").mkdir(exist_ok=True)
         (self.data_dir / "audit").mkdir(exist_ok=True)
+        (self.data_dir / "exports").mkdir(exist_ok=True)
+        (self.data_dir / "presets").mkdir(exist_ok=True)
 
 
 def load_yaml_config(path: Path | None = None) -> dict[str, Any]:

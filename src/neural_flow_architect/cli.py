@@ -105,10 +105,17 @@ def start(
     host: Optional[str] = typer.Option(None, help="API host"),
     port: Optional[int] = typer.Option(None, help="API port"),
     open_browser: bool = typer.Option(False, "--open/--no-open", help="Open companion UI URL"),
+    with_ui: bool = typer.Option(
+        False, "--with-ui/--no-with-ui", help="Also launch Vite companion UI if npm is available"
+    ),
 ) -> None:
     """
     Easy daily launcher: local API + clear next steps for BCI users/caregivers.
     """
+    import shutil
+    import subprocess
+    from pathlib import Path
+
     import uvicorn
 
     from neural_flow_architect.api.server import create_app
@@ -120,14 +127,24 @@ def start(
     if port:
         settings.api_port = port
 
+    ui_proc: subprocess.Popen[str] | None = None
+    repo_root = Path(__file__).resolve().parents[2]
+    frontend_dir = repo_root / "frontend"
+
     _banner()
+    ui_hint = (
+        "Companion UI launching via npm (if available)…"
+        if with_ui
+        else "2. In another terminal: [cyan]cd frontend && npm run dev[/]"
+    )
     console.print(
         Panel(
             "[bold]Easy start for daily use[/]\n\n"
             f"1. API is starting at [cyan]http://{settings.api_host}:{settings.api_port}[/]\n"
-            "2. In another terminal: [cyan]cd frontend && npm run dev[/]\n"
+            f"{ui_hint}\n"
             "3. Open [cyan]http://127.0.0.1:5173[/]\n"
             "4. Complete onboarding → pick a preset → Start session\n\n"
+            "[bold]Shortcuts:[/] P pause · U undo · R rest · S start · Y/N labels\n"
             "[dim]Always available: Pause · Undo · Rest[/]\n"
             "[dim]User guide: docs/ux/USER_GUIDE.md · Caregiver: docs/ux/CAREGIVER_SETUP.md[/]\n"
             "[dim]Not a medical device. Local-first by default.[/]",
@@ -136,19 +153,44 @@ def start(
         )
     )
     console.print(f"[green]Adapter:[/] {settings.adapter}")
-    if open_browser:
+
+    if with_ui and shutil.which("npm") and (frontend_dir / "package.json").exists():
+        console.print("[green]Starting companion UI…[/]")
+        ui_proc = subprocess.Popen(
+            ["npm", "run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"],
+            cwd=str(frontend_dir),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    elif with_ui:
+        console.print("[yellow]--with-ui requested but npm/frontend not ready; API only.[/]")
+
+    if open_browser or with_ui:
         import webbrowser
 
-        webbrowser.open(f"http://{settings.api_host}:{settings.api_port}/health")
         webbrowser.open("http://127.0.0.1:5173")
 
+    def _cleanup() -> None:
+        if ui_proc is not None and ui_proc.poll() is None:
+            ui_proc.terminate()
+            try:
+                ui_proc.wait(timeout=3)
+            except Exception:
+                ui_proc.kill()
+
     app_instance = create_app(settings)
-    uvicorn.run(
-        app_instance,
-        host=settings.api_host,
-        port=settings.api_port,
-        log_level=settings.log_level.lower(),
-    )
+    try:
+        uvicorn.run(
+            app_instance,
+            host=settings.api_host,
+            port=settings.api_port,
+            log_level=settings.log_level.lower(),
+        )
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Stopped[/]")
+    finally:
+        _cleanup()
 
 
 @app.command()

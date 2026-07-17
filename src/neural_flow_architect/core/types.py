@@ -135,6 +135,15 @@ class UserPreferences(BaseModel):
     positive_flow_labels: int = 0
     simple_mode: bool = True
     active_preset: str | None = None
+    # Accessibility (BCI-native long sessions)
+    ui_scale: float = Field(default=1.15, ge=1.0, le=2.0)
+    high_contrast: bool = False
+    reduced_motion: bool = True
+    dwell_ms: int = Field(default=1200, ge=400, le=3000)
+    sticky_controls: bool = True
+    keyboard_enabled: bool = True
+    voice_command_bar: bool = True
+    auto_start_on_preset: bool = False
 
 
 class WorldSnapshot(BaseModel):

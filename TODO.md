@@ -102,6 +102,10 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] neuralink_stub cycles control intents for practice
 - [x] Daily presets + first-run onboarding + Simple mode UI
 - [x] `nfa start` / `nfa doctor` easy path + user/caregiver docs
+- [x] Multimodal keyboard + voice/text → IntentRouter
+- [x] A11y settings (scale, contrast, dwell) + profile export/import
+- [x] Long-session buffer bounds + heartbeat/uptime + soft checkpoints
+- [x] `nfa start --with-ui` optional combined launcher
 
 ---
 

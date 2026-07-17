@@ -8,6 +8,8 @@
 | [bci/ADAPTER_LAYER.md](bci/ADAPTER_LAYER.md) | Open tools → high-bandwidth path |
 | [ux/UX_PRINCIPLES.md](ux/UX_PRINCIPLES.md) | BCI-native UX + wireframes |
 | [ux/USER_GUIDE.md](ux/USER_GUIDE.md) | Everyday use for BCI users |
+| [ux/DAILY_DRIVER.md](ux/DAILY_DRIVER.md) | Long sessions, multimodal, a11y |
+
 | [ux/CAREGIVER_SETUP.md](ux/CAREGIVER_SETUP.md) | First-time install help |
 | [bci/NEURALINK_READINESS.md](bci/NEURALINK_READINESS.md) | Future implant adapter path |
 | [architecture/LATENCY_BUDGET.md](architecture/LATENCY_BUDGET.md) | Latency budgets |

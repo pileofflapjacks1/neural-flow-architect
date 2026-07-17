@@ -42,6 +42,22 @@ export type NfaState = {
     confidence?: number;
     result?: Record<string, unknown>;
   } | null;
+  a11y?: {
+    ui_scale?: number;
+    high_contrast?: boolean;
+    reduced_motion?: boolean;
+    dwell_ms?: number;
+    sticky_controls?: boolean;
+    keyboard_enabled?: boolean;
+    voice_command_bar?: boolean;
+    auto_start_on_preset?: boolean;
+    css?: Record<string, string>;
+  };
+  session_health?: {
+    tick_count?: number;
+    uptime_sec?: number;
+    heartbeat_ok?: boolean;
+  };
   preferences?: Record<string, unknown>;
   context?: Record<string, unknown>;
   ts?: string;

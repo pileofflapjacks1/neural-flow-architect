@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FlowRing } from "./components/FlowRing";
 import { ExplainDrawer } from "./components/ExplainDrawer";
 import { OverrideBar } from "./components/OverrideBar";
@@ -7,7 +7,10 @@ import { RecipePicker } from "./components/RecipePicker";
 import { CoachingPanel } from "./components/CoachingPanel";
 import { Onboarding } from "./components/Onboarding";
 import { PresetPicker } from "./components/PresetPicker";
+import { VoiceCommandBar } from "./components/VoiceCommandBar";
+import { A11yPanel } from "./components/A11yPanel";
 import { useNfaSession } from "./hooks/useNfaSession";
+import { useKeyboardIntents } from "./hooks/useKeyboardIntents";
 
 function architectLabel(mode: string, paused: boolean, running: boolean): string {
   if (!running) return "Ready — start when you want";
@@ -44,10 +47,23 @@ export function App() {
     refresh,
   } = useNfaSession();
   const [showWhy, setShowWhy] = useState(false);
-  const [tab, setTab] = useState<"live" | "insights" | "coaching">("live");
+  const [tab, setTab] = useState<"live" | "insights" | "coaching" | "access">("live");
   const [onboardingDone, setOnboardingDone] = useState(false);
 
   const simple = state.simple_mode !== false;
+  const a11y = state.a11y;
+  const keyboardOn = a11y?.keyboard_enabled !== false;
+  useKeyboardIntents(keyboardOn);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (a11y?.css) {
+      Object.entries(a11y.css).forEach(([k, v]) => root.style.setProperty(k, String(v)));
+    }
+    root.classList.toggle("nfa-high-contrast", !!a11y?.high_contrast);
+    root.classList.toggle("nfa-reduced-motion", a11y?.reduced_motion !== false);
+  }, [a11y]);
+
   const explanationText =
     state.explanation?.text ??
     (state.running
@@ -57,9 +73,12 @@ export function App() {
   const because = (state.explanation?.because as Array<Record<string, unknown>>) ?? [];
   const recipe = state.recipe ?? "study";
   const showOnboarding = !onboardingDone && state.onboarding_completed === false;
+  const uptime = state.session_health?.uptime_sec;
 
   return (
-    <div className={`app-shell ${simple ? "simple" : ""}`}>
+    <div
+      className={`app-shell ${simple ? "simple" : ""} ${a11y?.high_contrast ? "high-contrast" : ""}`}
+    >
       <a className="skip-link" href="#main">
         Skip to main content
       </a>
@@ -71,6 +90,9 @@ export function App() {
             {connected ? `Signal ${state.signal}` : "Connecting…"}
             {state.running ? " · live" : " · idle"}
             {simple ? " · simple mode" : " · full mode"}
+            {typeof uptime === "number" && state.running
+              ? ` · ${Math.floor(uptime / 60)}m`
+              : ""}
           </p>
         </div>
         <OverrideBar
@@ -158,6 +180,13 @@ export function App() {
               >
                 Coaching
               </button>
+              <button
+                type="button"
+                className={tab === "access" ? "tab active" : "tab"}
+                onClick={() => setTab("access")}
+              >
+                Access
+              </button>
             </nav>
           )}
 
@@ -168,6 +197,8 @@ export function App() {
                   activeId={state.active_preset}
                   onApplied={() => refresh()}
                 />
+
+                <VoiceCommandBar enabled={a11y?.voice_command_bar !== false} />
 
                 <div className="session-controls action-row">
                   {!state.running ? (
@@ -303,6 +334,7 @@ export function App() {
               <InsightsPanel session={state.session} />
             )}
             {!simple && tab === "coaching" && <CoachingPanel />}
+            {!simple && tab === "access" && <A11yPanel />}
           </main>
         </>
       )}
@@ -329,7 +361,7 @@ export function App() {
       <footer className="footer">
         <p>
           Local · Not a medical device · Built for BCI users ·{" "}
-          <span className="dim">Pause is always available</span>
+          <span className="dim">P pause · U undo · R rest · F resume</span>
         </p>
       </footer>
     </div>

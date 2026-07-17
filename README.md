@@ -164,15 +164,18 @@ pip install -e ".[dev]"
 
 nfa doctor                  # health check
 nfa start                   # local API + clear next steps
+nfa start --with-ui         # API + Vite UI (needs npm install in frontend/)
 ```
 
-Companion UI (separate terminal):
+Companion UI (if not using `--with-ui`):
 
 ```bash
 cd frontend && npm install && npm run dev
 # open http://127.0.0.1:5173
 # Onboarding → pick a daily preset → Start session
-# Sticky controls: Pause · Undo · Rest (always available)
+# Sticky controls: Pause · Undo · Rest
+# Keyboard: P pause · F resume · U undo · R rest · S start
+# Command bar: type “pause”, “undo”, “rest mode”
 ```
 
 **Guides:** [docs/ux/USER_GUIDE.md](docs/ux/USER_GUIDE.md) · [docs/ux/CAREGIVER_SETUP.md](docs/ux/CAREGIVER_SETUP.md) · [docs/bci/NEURALINK_READINESS.md](docs/bci/NEURALINK_READINESS.md)
