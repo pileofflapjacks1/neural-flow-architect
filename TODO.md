@@ -34,7 +34,7 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Pre-commit config committed and documented
 - [x] Local `scripts/ci.sh` mirrors Actions gates
 - [x] Mypy strict mode blocking in CI
-- [ ] First annotated public demo GIF / short video
+- [x] First annotated public demo GIF (`docs/assets/demo/nfa-companion-demo.gif`)
 - [x] Issue/PR templates
 
 ---
@@ -176,8 +176,8 @@ Check items as they ship. Prefer small, reviewable PRs.
 3. ~~Accessibility audit pack~~ done  
 4. ~~Insights weekly recap~~ done  
 5. ~~mypy strict debt + blocking CI~~ done  
-6. Annotated public demo GIF / short video  
+6. ~~Annotated public demo GIF~~ done  
 
 ---
 
-*Last updated: mypy blocking CI — July 2026*
+*Last updated: demo GIF — July 2026*
