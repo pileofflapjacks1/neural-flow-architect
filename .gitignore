@@ -79,3 +79,7 @@ configs/secrets.yaml
 *.pt
 *.onnx
 !assets/demo/*.onnx
+
+# Local audit / runtime
+data/audit/
+*.jsonl
