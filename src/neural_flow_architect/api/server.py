@@ -41,6 +41,11 @@ class RecipeBody(BaseModel):
 class ContextBody(BaseModel):
     active_app: str | None = None
     user_goal: str | None = None
+    detect_active_app: bool | None = None
+
+
+class IotDryRunBody(BaseModel):
+    force_dry_run: bool = True
 
 
 class PredictiveBody(BaseModel):
@@ -208,7 +213,23 @@ def create_app(
 
     @app.post("/context")
     async def set_context(body: ContextBody) -> dict[str, Any]:
-        return session.set_context(active_app=body.active_app, user_goal=body.user_goal)
+        return session.set_context(
+            active_app=body.active_app,
+            user_goal=body.user_goal,
+            detect_active_app=body.detect_active_app,
+        )
+
+    @app.get("/trust")
+    async def trust() -> dict[str, Any]:
+        return session.trust_metrics()
+
+    @app.get("/environment")
+    async def environment() -> dict[str, Any]:
+        return session.environment_status()
+
+    @app.post("/environment/iot_dry_run")
+    async def iot_dry_run(body: IotDryRunBody) -> dict[str, Any]:
+        return session.set_iot_dry_run(body.force_dry_run)
 
     @app.get("/coaching")
     async def coaching() -> dict[str, Any]:

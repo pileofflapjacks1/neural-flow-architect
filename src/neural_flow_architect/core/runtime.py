@@ -77,6 +77,7 @@ class NeuralFlowRuntime:
         self.digital = DigitalOrchestrator()
         self.physical = PhysicalOrchestrator(
             enabled=self.settings.iot_enabled,
+            force_dry_run=getattr(self.settings, "iot_force_dry_run", True),
             base_url=self.settings.home_assistant_url,
             token=self.settings.home_assistant_token,
         )

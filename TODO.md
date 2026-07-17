@@ -44,6 +44,11 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Replay adapter + synthetic trajectory fixture
 - [x] Fail-safe override (stall / quality / errors / user pause)
 - [x] Action feedback (helpful / unhelpful / never) + affinity scoring
+- [x] Active-app context (optional, local) + app-aware protect scoring
+- [x] Adapter contract golden suite (`nfa contract`)
+- [x] IoT force dry-run safety pack
+- [x] Session trust metrics (`GET /trust`)
+- [x] Threat model (STRIDE-lite)
 - [x] Quality metrics (clip/flat/noise/dropout heuristics + overall score)
 - [x] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
 - [x] Optional connectivity feature flag (`include_connectivity`)

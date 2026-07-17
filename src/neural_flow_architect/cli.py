@@ -78,6 +78,33 @@ def status() -> None:
     )
 
 
+@app.command("contract")
+def contract_cmd(
+    adapter: str = typer.Option("simulator", help="simulator|replay|neuralink_stub|brainflow"),
+) -> None:
+    """Run adapter contract golden suite (connect → frames → disconnect)."""
+    from neural_flow_architect.adapters.contract import run_adapter_contract
+    from neural_flow_architect.adapters.registry import build_adapter
+
+    settings = get_settings()
+    settings.adapter = adapter  # type: ignore[assignment]
+    # BrainFlow file mode without package when using synthetic file
+    if adapter == "brainflow" and not settings.brainflow_file:
+        settings.brainflow_file = "tests/fixtures/synthetic_eeg.csv"
+    _banner()
+    console.print(f"[green]Adapter contract[/] adapter={adapter}")
+    ad = build_adapter(settings)
+    report = asyncio.run(run_adapter_contract(ad, max_frames=3))
+    table = Table(title="Contract report", show_header=True, header_style="bold")
+    table.add_column("Key")
+    table.add_column("Value")
+    for k, v in report.items():
+        table.add_row(k, str(v))
+    console.print(table)
+    if not report.get("ok"):
+        raise typer.Exit(code=1)
+
+
 @app.command()
 def doctor() -> None:
     """Check install health (Python, deps, data dir, privacy defaults)."""

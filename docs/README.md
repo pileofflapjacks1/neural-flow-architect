@@ -14,6 +14,8 @@
 | [bci/NEURALINK_READINESS.md](bci/NEURALINK_READINESS.md) | Future implant adapter path |
 | [bci/BRAINFLOW.md](bci/BRAINFLOW.md) | Open EEG today |
 | [architecture/FAILSAFE.md](architecture/FAILSAFE.md) | Override & degraded-signal safety |
+| [privacy/THREAT_MODEL.md](privacy/THREAT_MODEL.md) | STRIDE-lite threat model |
+
 
 | [architecture/LATENCY_BUDGET.md](architecture/LATENCY_BUDGET.md) | Latency budgets |
 | [privacy/PRIVACY_ETHICS.md](privacy/PRIVACY_ETHICS.md) | Privacy, ethics, safety |

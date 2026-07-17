@@ -69,8 +69,13 @@ class Settings(BaseSettings):
     os_notifications_announce: bool = False
 
     iot_enabled: bool = False
+    iot_force_dry_run: bool = True  # never hit HA until explicitly set false
     home_assistant_url: str = ""
     home_assistant_token: str = ""
+
+    # Local context (optional)
+    detect_active_app: bool = False  # off by default; enable for app-aware protect
+    active_app_poll_sec: float = 5.0
 
     api_host: str = "127.0.0.1"
     api_port: int = 8741

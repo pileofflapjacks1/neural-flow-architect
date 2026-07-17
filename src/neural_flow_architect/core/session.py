@@ -107,6 +107,7 @@ class SessionController:
         return None
 
     def context_for_runtime(self) -> ContextSnapshot:
+        # Soft lock: if user set recipe manually, keep it; still attach app for policies
         return enrich_context(
             ContextSnapshot(
                 recipe=self._recipe,
@@ -116,6 +117,7 @@ class SessionController:
             active_app=self._active_app,
             user_goal=self._user_goal,
             recipe=self._recipe,
+            detect_app=bool(self.settings.detect_active_app) and self._active_app is None,
         )
 
     def _idle_state(self) -> dict[str, Any]:
@@ -752,15 +754,67 @@ class SessionController:
         *,
         active_app: str | None = None,
         user_goal: str | None = None,
+        detect_active_app: bool | None = None,
     ) -> dict[str, Any]:
         if active_app is not None:
             self._active_app = active_app or None
         if user_goal is not None:
             self._user_goal = user_goal or None
+        if detect_active_app is not None:
+            self.settings.detect_active_app = detect_active_app
+        # One-shot detect if enabled and no manual app
+        if self.settings.detect_active_app and not self._active_app:
+            from neural_flow_architect.core.active_app import detect_active_app as _detect
+
+            det = _detect(enabled=True)
+            if det.app_name:
+                self._active_app = det.app_name
         state = self.get_state()
         state["context"] = self.context_for_runtime().model_dump()
+        state["detect_active_app"] = self.settings.detect_active_app
         self._publish(state)
         return {"ok": True, "context": state["context"], "state": state}
+
+    def trust_metrics(self) -> dict[str, Any]:
+        from neural_flow_architect.insights.trust import compute_trust_metrics
+
+        session = self.runtime.insights.snapshot_current() or {}
+        # Merge last persisted if no live session
+        if not session:
+            sessions = self.list_sessions()
+            session = sessions[0] if sessions else {}
+        fb_hist = self.feedback.as_dict().get("history") or []
+        uptime = float((self.get_state().get("session_health") or {}).get("uptime_sec") or 0)
+        fs = self.failsafe.state.to_dict()
+        fs_sec = float(fs.get("seconds_active") or 0)
+        metrics = compute_trust_metrics(
+            actions_count=int(session.get("actions_count") or 0),
+            undos_count=int(session.get("undos_count") or 0),
+            feedback_history=fb_hist,
+            denied_tools=list(self.profile.preferences.denied_tools),
+            failsafe_active_seconds=fs_sec,
+            session_uptime_sec=uptime,
+        )
+        return {
+            "ok": True,
+            "trust": metrics,
+            "session_id": session.get("session_id"),
+            "iot": self.runtime.physical.status(),
+        }
+
+    def environment_status(self) -> dict[str, Any]:
+        return {
+            "ok": True,
+            "iot": self.runtime.physical.status(),
+            "agent_dry_run": self.runtime.architect.dry_run,
+            "iot_force_dry_run": self.runtime.physical.force_dry_run,
+            "detect_active_app": self.settings.detect_active_app,
+        }
+
+    def set_iot_dry_run(self, force_dry_run: bool) -> dict[str, Any]:
+        self.settings.iot_force_dry_run = force_dry_run
+        self.runtime.physical.force_dry_run = force_dry_run
+        return {"ok": True, "iot": self.runtime.physical.status()}
 
     def label_flow(self, felt_in_flow: bool, note: str = "") -> dict[str, Any]:
         flow = self._latest.get("flow") or {}

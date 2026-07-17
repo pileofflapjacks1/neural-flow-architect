@@ -116,6 +116,7 @@ class FlowEstimate(BaseModel):
 
 class ContextSnapshot(BaseModel):
     active_app: str | None = None
+    app_category: str = "unknown"  # study | create | social | system | unknown
     time_of_day: str = "unknown"
     hour: int | None = None
     user_goal: str | None = None

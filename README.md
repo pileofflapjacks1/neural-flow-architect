@@ -195,6 +195,14 @@ NFA_ADAPTER=brainflow NFA_BRAINFLOW_FILE=tests/fixtures/synthetic_eeg.csv nfa se
 
 nfa eval --duration 20 --recipe study
 nfa bench --channels 8 --iterations 40
+nfa contract --adapter simulator   # adapter golden suite
+nfa contract --adapter replay
+```
+
+Optional app-aware protection (local window titles only):
+
+```bash
+NFA_DETECT_ACTIVE_APP=true nfa serve
 ```
 
 **Fail-safe:** Pause always works; low quality / stream stall blocks proactive IoT.  

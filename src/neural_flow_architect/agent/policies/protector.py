@@ -14,6 +14,7 @@ from neural_flow_architect.environment.recipes import recipe_protect_bonus
 def propose_protect(snapshot: WorldSnapshot) -> list[ActionProposal]:
     flow = snapshot.flow
     recipe = snapshot.context.recipe or "study"
+    app_cat = snapshot.context.app_category or "unknown"
     causes = [
         {"signal": "module", "value": "protector"},
         {"signal": "state", "value": flow.state.value},
@@ -21,8 +22,14 @@ def propose_protect(snapshot: WorldSnapshot) -> list[ActionProposal]:
         {"signal": "confidence", "value": round(flow.confidence, 3)},
         {"signal": "minutes_in_state", "value": round(flow.minutes_in_state, 2)},
         {"signal": "recipe", "value": recipe},
+        {"signal": "app_category", "value": app_cat},
     ]
     bonus = recipe_protect_bonus(recipe)
+    # Soft context: protect harder in study/create apps; gentler in social
+    if app_cat in {"study", "create"}:
+        bonus += 0.05
+    elif app_cat == "social":
+        bonus -= 0.15
     deep = flow.state == FlowState.DEEP_FLOW
 
     proposals = [
@@ -38,7 +45,7 @@ def propose_protect(snapshot: WorldSnapshot) -> list[ActionProposal]:
             tool_id="notify.suppress_noncritical",
             impact=ImpactLevel.MEDIUM,
             params={},
-            score=(0.95 if deep else 0.85) + bonus,
+            score=(0.95 if deep else 0.85) + bonus + (0.0 if app_cat != "social" else -0.4),
             causes=causes
             + [{"signal": "reason", "value": "protect sustained engagement"}],
         ),
