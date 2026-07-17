@@ -81,6 +81,13 @@ class A11yBody(BaseModel):
     keyboard_enabled: bool | None = None
     voice_command_bar: bool | None = None
     auto_start_on_preset: bool | None = None
+    quiet_hours_enabled: bool | None = None
+    quiet_hours_start: int | None = None
+    quiet_hours_end: int | None = None
+    suggest_recipe_from_app: bool | None = None
+    scan_mode: bool | None = None
+    scan_interval_ms: int | None = None
+    announce_actions: bool | None = None
 
 
 class MultimodalBody(BaseModel):
@@ -414,6 +421,19 @@ def create_app(
     @app.post("/a11y")
     async def post_a11y(body: A11yBody) -> dict[str, Any]:
         return session.update_a11y(**body.model_dump(exclude_none=True))
+
+    @app.get("/keymap")
+    async def get_keymap() -> dict[str, Any]:
+        """Keyboard → intent map for companion UI and assistive docs."""
+        return {
+            "ok": True,
+            "keys": session.keyboard_map_for_ui(),
+            "notes": [
+                "Shortcuts are ignored while typing in inputs.",
+                "Scan mode uses Space/Enter to select the highlighted control.",
+                "Pause and Undo always remain available from sticky controls.",
+            ],
+        }
 
     @app.get("/profile/export")
     async def export_profile() -> dict[str, Any]:

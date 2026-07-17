@@ -27,6 +27,7 @@ body {
 .skip-link {
   position: absolute;
   left: -999px;
+  top: 0;
 }
 .skip-link:focus {
   left: 1rem;
@@ -35,6 +36,44 @@ body {
   background: var(--accent);
   color: #000;
   padding: 0.75rem 1rem;
+  border-radius: 8px;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.skip-link-controls:focus {
+  top: 3.5rem;
+}
+
+/* Screen-reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Keyboard focus — visible rings for BCI/switch users */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.target-btn:focus-visible,
+.dwell-btn:focus-visible,
+.tab:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(110, 168, 255, 0.25);
+}
+
+html.nfa-high-contrast :focus-visible,
+.app-shell.high-contrast :focus-visible {
+  outline-color: #fff;
+  outline-width: 4px;
 }
 
 .app-shell {
@@ -540,6 +579,39 @@ html.nfa-reduced-motion *,
 
 html.nfa-reduced-motion .dwell-fill {
   transition: none;
+}
+
+/* Keyboard map + a11y presets */
+.keymap-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0 1.25rem;
+  font-size: 0.95rem;
+}
+.keymap-table th,
+.keymap-table td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid #2a3348;
+}
+.keymap-table kbd {
+  display: inline-block;
+  min-width: 1.5rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid #3a4560;
+  background: #121722;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.preset-chips {
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.75rem;
+}
+.preset-chips .target-btn.recipe {
+  min-height: 48px;
+  font-size: 0.9rem;
 }
 
 /* App map editor */

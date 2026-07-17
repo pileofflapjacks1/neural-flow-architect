@@ -97,12 +97,21 @@ export function ScanMode({
 
   if (!enabled || actions.length === 0) return null;
 
+  const current = actions[index];
+
   return (
-    <section className="scan-mode" aria-label="Scan mode controls">
-      <p className="meta-line">
+    <section
+      className="scan-mode"
+      aria-label="Scan mode controls"
+      aria-roledescription="sequential scanner"
+    >
+      <p className="meta-line" id="scan-instructions">
         Scan + dwell — highlight fills, then selects · Space/Enter also selects
       </p>
-      <div className="action-row">
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {current ? `Scan highlight: ${current.label}` : ""}
+      </p>
+      <div className="action-row" role="group" aria-describedby="scan-instructions">
         {actions.map((a, i) => (
           <DwellButton
             key={a.id}
@@ -113,7 +122,8 @@ export function ScanMode({
             externalProgress={i === index ? dwellProgress : 0}
             variant={i === index ? "xl" : "secondary"}
             className={i === index ? "scan-active" : ""}
-            aria-pressed={undefined}
+            aria-pressed={i === index}
+            title={i === index ? `Selected: ${a.label}` : a.label}
           />
         ))}
       </div>

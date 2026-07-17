@@ -67,9 +67,14 @@ Open **Access** tab (full mode) or API `POST /a11y`:
 - UI scale  
 - High contrast  
 - Reduced motion  
-- Dwell ms (for future dwell widgets)  
+- Screen reader announcements (polite live region)  
+- Dwell fill presets: **800 / 1200 / 1800 ms**  
+- Scan mode + interval presets: **Fast 800 / Default 1400 / Slow 2000 ms**  
+- Keyboard map (and `GET /keymap`)  
 - Keyboard / command bar toggles  
-- Profile export backup (preferences only — **no raw neural data**)
+- Profile export backup (preferences only — **no raw neural data**)  
+
+Release checklist: [A11Y_AUDIT.md](A11Y_AUDIT.md).
 
 ## Easy start with UI
 

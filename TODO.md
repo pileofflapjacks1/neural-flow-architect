@@ -99,7 +99,8 @@ Check items as they ship. Prefer small, reviewable PRs.
 ### Quality
 - [x] Integration tests with fixture EEG (BrainFlow file mode closed loop)
 - [x] Performance budget: feature→flow latency smoke in doctor + tests
-- [ ] Accessibility audit checklist for companion UI
+- [x] Accessibility audit checklist for companion UI (`docs/ux/A11Y_AUDIT.md`)
+- [x] Live regions (fail-safe assertive + polite status), scan/dwell presets, keymap API
 
 ---
 
@@ -170,11 +171,11 @@ Check items as they ship. Prefer small, reviewable PRs.
 
 1. ~~Wire GitHub Actions CI~~ done  
 2. ~~BrainFlow validation pack~~ done  
-3. Clear remaining mypy strict debt (make advisory CI job blocking)  
-4. Annotated public demo GIF / short video  
-5. Accessibility audit checklist for companion UI  
+3. ~~Accessibility audit pack~~ done  
+4. Clear remaining mypy strict debt (make advisory CI job blocking)  
+5. Annotated public demo GIF / short video  
 6. Timeline filter chips / scoreboard sparklines (Insights polish)  
 
 ---
 
-*Last updated: BrainFlow validation pack — July 2026*
+*Last updated: A11y audit pack — July 2026*

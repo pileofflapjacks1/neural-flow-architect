@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
+import { KeyboardMap } from "./KeyboardMap";
 
 const API_BASE = import.meta.env.VITE_NFA_API ?? "http://127.0.0.1:8741";
+
+const DEFAULT_SCAN_PRESETS = [800, 1400, 2000];
+const DEFAULT_DWELL_PRESETS = [800, 1200, 1800];
 
 type A11y = {
   ui_scale: number;
@@ -16,6 +20,10 @@ type A11y = {
   suggest_recipe_from_app?: boolean;
   scan_mode?: boolean;
   scan_interval_ms?: number;
+  announce_actions?: boolean;
+  keyboard_map?: Array<{ code?: string; key?: string; label?: string; intent?: string }>;
+  scan_presets_ms?: number[];
+  dwell_presets_ms?: number[];
 };
 
 export function A11yPanel() {
@@ -65,13 +73,23 @@ export function A11yPanel() {
     return <p className="explanation">{msg || "Loading accessibility…"}</p>;
   }
 
+  const scanPresets = a11y.scan_presets_ms?.length
+    ? a11y.scan_presets_ms
+    : DEFAULT_SCAN_PRESETS;
+  const dwellPresets = a11y.dwell_presets_ms?.length
+    ? a11y.dwell_presets_ms
+    : DEFAULT_DWELL_PRESETS;
+
   return (
     <section className="a11y-panel" aria-labelledby="a11y-title">
       <h2 id="a11y-title">Accessibility</h2>
       <p className="dim">
         Tuned for low-precision control and long sessions. Changes save on this
-        device.
+        device. Full checklist:{" "}
+        <code>docs/ux/A11Y_AUDIT.md</code>
       </p>
+
+      <h3>Display</h3>
       <label className="a11y-row">
         UI scale ({a11y.ui_scale.toFixed(2)})
         <input
@@ -81,6 +99,7 @@ export function A11yPanel() {
           step={0.05}
           value={a11y.ui_scale}
           onChange={(e) => save({ ui_scale: Number(e.target.value) })}
+          aria-valuetext={`${a11y.ui_scale.toFixed(2)} times`}
         />
       </label>
       <label className="a11y-row">
@@ -102,6 +121,16 @@ export function A11yPanel() {
       <label className="a11y-row">
         <input
           type="checkbox"
+          checked={a11y.announce_actions !== false}
+          onChange={(e) => save({ announce_actions: e.target.checked })}
+        />
+        Screen reader announcements (intents, signal, co-pilot)
+      </label>
+
+      <h3>Input</h3>
+      <label className="a11y-row">
+        <input
+          type="checkbox"
           checked={a11y.keyboard_enabled}
           onChange={(e) => save({ keyboard_enabled: e.target.checked })}
         />
@@ -115,8 +144,35 @@ export function A11yPanel() {
         />
         Command bar (voice/type)
       </label>
+
+      <h3>Dwell fill</h3>
+      <p className="dim">
+        Pause / Undo / Rest fill while you hold the pointer or focus. Click still
+        activates instantly.
+      </p>
+      <div
+        className="preset-chips action-row"
+        role="group"
+        aria-label="Dwell duration presets"
+      >
+        {dwellPresets.map((ms) => (
+          <button
+            key={ms}
+            type="button"
+            className={
+              a11y.dwell_ms === ms
+                ? "target-btn recipe active"
+                : "target-btn secondary recipe"
+            }
+            aria-pressed={a11y.dwell_ms === ms}
+            onClick={() => save({ dwell_ms: ms })}
+          >
+            {ms} ms
+          </button>
+        ))}
+      </div>
       <label className="a11y-row">
-        Dwell fill ms (hover/focus hold)
+        Custom dwell ms
         <input
           type="number"
           min={400}
@@ -126,10 +182,50 @@ export function A11yPanel() {
           onChange={(e) => save({ dwell_ms: Number(e.target.value) })}
         />
       </label>
-      <p className="dim">
-        Pause / Undo / Rest fill while you hold the pointer or focus. Click still
-        activates instantly. Scan mode auto-fills the highlighted control.
-      </p>
+
+      <h3>Scan mode</h3>
+      <label className="a11y-row">
+        <input
+          type="checkbox"
+          checked={!!a11y.scan_mode}
+          onChange={(e) => save({ scan_mode: e.target.checked })}
+        />
+        Scan mode (sequential highlight — Space/Enter select)
+      </label>
+      <div
+        className="preset-chips action-row"
+        role="group"
+        aria-label="Scan interval presets"
+      >
+        {scanPresets.map((ms) => (
+          <button
+            key={ms}
+            type="button"
+            className={
+              (a11y.scan_interval_ms ?? 1400) === ms
+                ? "target-btn recipe active"
+                : "target-btn secondary recipe"
+            }
+            aria-pressed={(a11y.scan_interval_ms ?? 1400) === ms}
+            onClick={() => save({ scan_interval_ms: ms })}
+          >
+            {ms === 800 ? "Fast" : ms === 2000 ? "Slow" : "Default"} ({ms} ms)
+          </button>
+        ))}
+      </div>
+      <label className="a11y-row">
+        Custom scan interval ms
+        <input
+          type="number"
+          min={600}
+          max={4000}
+          step={100}
+          value={a11y.scan_interval_ms ?? 1400}
+          onChange={(e) => save({ scan_interval_ms: Number(e.target.value) })}
+        />
+      </label>
+
+      <h3>Quiet hours & context</h3>
       <label className="a11y-row">
         <input
           type="checkbox"
@@ -166,32 +262,16 @@ export function A11yPanel() {
         />
         Suggest recipe from active app
       </label>
-      <label className="a11y-row">
-        <input
-          type="checkbox"
-          checked={!!a11y.scan_mode}
-          onChange={(e) => save({ scan_mode: e.target.checked })}
-        />
-        Scan mode (sequential highlight — Space/Enter select)
-      </label>
-      <label className="a11y-row">
-        Scan interval ms
-        <input
-          type="number"
-          min={600}
-          max={4000}
-          step={100}
-          value={a11y.scan_interval_ms ?? 1400}
-          onChange={(e) => save({ scan_interval_ms: Number(e.target.value) })}
-        />
-      </label>
+
+      <KeyboardMap entries={a11y.keyboard_map} />
+
       <div className="action-row">
         <button type="button" className="target-btn secondary" onClick={exportProfile}>
           Export profile backup
         </button>
       </div>
       {msg && (
-        <p className="meta-line" role="status">
+        <p className="meta-line" role="status" aria-live="polite">
           {msg}
         </p>
       )}

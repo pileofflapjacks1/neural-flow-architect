@@ -11,10 +11,10 @@ Use these labels when filing issues on GitHub: `good first issue`, `docs`, `bci-
 5. **i18n:** Extract sticky control labels (Pause/Undo/Rest) to a constants file.  
 6. **privacy:** Add unit test that audit log never accepts a `data` detail key.  
 7. **flow-science:** Document that engagement_proxy is not clinical flow.  
-8. **frontend:** Screen-reader live region for fail-safe banner.  
-9. **frontend:** Timeline filter chips (state / action / undo only).  
-10. **os-focus:** Windows Focus Assist bridge (still dry-run safe by default).  
-11. **scoreboard:** Sparkline of policy score across last N sessions.  
+8. **frontend:** Timeline filter chips (state / action / undo only).  
+9. **os-focus:** Windows Focus Assist bridge (still dry-run safe by default).  
+10. **scoreboard:** Sparkline of policy score across last N sessions.  
+11. **a11y:** VoiceOver / NVDA walkthrough notes added to A11Y_AUDIT sign-off.  
 
 ## Design constraints for all issues
 

@@ -154,6 +154,8 @@ class UserPreferences(BaseModel):
     # Zero-precision sequential scanning mode
     scan_mode: bool = False
     scan_interval_ms: int = Field(default=1400, ge=600, le=4000)
+    # Screen-reader / live-region verbosity for co-pilot state changes
+    announce_actions: bool = True
 
 
 class WorldSnapshot(BaseModel):

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FlowRing } from "./components/FlowRing";
 import { ExplainDrawer } from "./components/ExplainDrawer";
 import { OverrideBar } from "./components/OverrideBar";
@@ -14,6 +14,7 @@ import { ScanMode } from "./components/ScanMode";
 import { DwellButton } from "./components/DwellButton";
 import { CaregiverChecklist } from "./components/CaregiverChecklist";
 import { SignaturePanel } from "./components/SignaturePanel";
+import { LiveAnnouncer } from "./components/LiveAnnouncer";
 import { useNfaSession } from "./hooks/useNfaSession";
 import { useKeyboardIntents } from "./hooks/useKeyboardIntents";
 
@@ -67,6 +68,7 @@ export function App() {
   const dwellMs = a11y?.dwell_ms ?? state.a11y?.dwell_ms ?? 1200;
   const dwellOn = true; // always available for low-precision; click still instant
   const keyboardOn = a11y?.keyboard_enabled !== false && !scanOn;
+  const announceOn = a11y?.announce_actions !== false;
   useKeyboardIntents(keyboardOn);
 
   const scanActions = [
@@ -105,6 +107,53 @@ export function App() {
   const showOnboarding = !onboardingDone && state.onboarding_completed === false;
   const uptime = state.session_health?.uptime_sec;
 
+  // Screen-reader announcements (assertive fail-safe; polite routine)
+  const assertiveAnnounce = useMemo(() => {
+    if (error) return String(error);
+    if (state.failsafe?.active) {
+      return `Fail-safe: ${state.failsafe.message || state.failsafe.reason || "active"}`;
+    }
+    return "";
+  }, [error, state.failsafe?.active, state.failsafe?.message, state.failsafe?.reason]);
+
+  const politeAnnounce = useMemo(() => {
+    if (!announceOn) return "";
+    const parts: string[] = [];
+    if (connected) {
+      parts.push(
+        `Signal ${state.signal}${state.running ? ", live" : ", idle"}${
+          state.adapter ? `, adapter ${state.adapter}` : ""
+        }`
+      );
+    }
+    if (state.agent_paused) parts.push("Architect paused");
+    if (state.last_intent?.type) {
+      const extra = state.last_intent.result
+        ? String(
+            (state.last_intent.result as { message?: string }).message ?? ""
+          )
+        : "";
+      parts.push(
+        `Intent ${String(state.last_intent.type)}${extra ? `: ${extra}` : ""}`
+      );
+    }
+    if (state.learning?.message) parts.push(String(state.learning.message));
+    if (state.quiet_hours?.active_now) {
+      parts.push("Quiet hours active");
+    }
+    return parts.join(". ");
+  }, [
+    announceOn,
+    connected,
+    state.signal,
+    state.running,
+    state.adapter,
+    state.agent_paused,
+    state.last_intent,
+    state.learning?.message,
+    state.quiet_hours?.active_now,
+  ]);
+
   return (
     <div
       className={`app-shell ${simple ? "simple" : ""} ${a11y?.high_contrast ? "high-contrast" : ""}`}
@@ -112,11 +161,22 @@ export function App() {
       <a className="skip-link" href="#main">
         Skip to main content
       </a>
+      <a className="skip-link skip-link-controls" href="#primary-controls">
+        Skip to primary controls
+      </a>
+
+      <LiveAnnouncer id="nfa-assertive" message={assertiveAnnounce} assertive />
+      <LiveAnnouncer id="nfa-polite" message={politeAnnounce} />
 
       <header className="top-bar">
         <div>
           <h1>Neural Flow Architect</h1>
-          <p className="signal-chip" aria-live="polite">
+          <p
+            className="signal-chip"
+            aria-live="polite"
+            aria-atomic="true"
+            id="signal-status"
+          >
             {connected ? `Signal ${state.signal}` : "Connecting…"}
             {state.running ? " · live" : " · idle"}
             {state.adapter ? ` · ${state.adapter}` : ""}
@@ -135,17 +195,24 @@ export function App() {
         />
       </header>
 
-      {/* Always-visible emergency controls OR scan mode */}
+      {/* Always-visible emergency controls OR scan mode — first in tab order after skip */}
       {scanOn ? (
-        <ScanMode
-          enabled
-          intervalMs={state.scan_interval_ms || a11y?.scan_interval_ms || 1400}
-          dwellMs={dwellMs}
-          dwellEnabled={dwellOn}
-          actions={scanActions}
-        />
+        <div id="primary-controls">
+          <ScanMode
+            enabled
+            intervalMs={state.scan_interval_ms || a11y?.scan_interval_ms || 1400}
+            dwellMs={dwellMs}
+            dwellEnabled={dwellOn}
+            actions={scanActions}
+          />
+        </div>
       ) : (
-        <div className="sticky-controls" role="toolbar" aria-label="Primary controls">
+        <div
+          id="primary-controls"
+          className="sticky-controls"
+          role="toolbar"
+          aria-label="Primary controls: Pause, Undo, Rest"
+        >
           <DwellButton
             label={state.agent_paused ? "Resume" : "Pause"}
             onActivate={() => setPaused(!state.agent_paused)}
@@ -173,20 +240,27 @@ export function App() {
       )}
 
       {error && (
-        <div className="banner warn" role="alert">
+        <div className="banner warn" role="alert" aria-live="assertive">
           {error}
           <p className="meta-line">Tip: run <code>nfa start</code> in a terminal.</p>
         </div>
       )}
 
       {state.failsafe?.active && (
-        <div className="banner warn" role="alert">
-          <strong>Fail-safe:</strong> {state.failsafe.message || state.failsafe.reason}
+        <div
+          className="banner warn"
+          role="alert"
+          aria-live="assertive"
+          aria-labelledby="failsafe-title"
+        >
+          <strong id="failsafe-title">Fail-safe:</strong>{" "}
+          {state.failsafe.message || state.failsafe.reason}
           <div className="action-row" style={{ marginTop: "0.5rem" }}>
             <button
               type="button"
               className="target-btn override"
               onClick={() => setPaused(true)}
+              autoFocus
             >
               Pause now
             </button>
@@ -204,13 +278,13 @@ export function App() {
       )}
 
       {state.quiet_hours?.active_now && (
-        <div className="banner info" role="status">
+        <div className="banner info" role="status" aria-live="polite">
           Quiet hours active — proactive protect is softened.
         </div>
       )}
 
       {state.recipe_suggestion && simple && (
-        <div className="banner info" role="status">
+        <div className="banner info" role="status" aria-live="polite">
           {String(state.recipe_suggestion.message)}
           <div className="action-row" style={{ marginTop: "0.5rem" }}>
             <button
@@ -225,13 +299,13 @@ export function App() {
       )}
 
       {state.learning?.message && (
-        <div className="banner info" role="status">
+        <div className="banner info" role="status" aria-live="polite">
           {state.learning.message}
         </div>
       )}
 
       {state.last_intent?.type && (
-        <div className="banner info" role="status">
+        <div className="banner info" role="status" aria-live="polite">
           Intent: {String(state.last_intent.type)}
           {state.last_intent.result
             ? ` — ${String((state.last_intent.result as { message?: string }).message ?? "")}`
@@ -504,7 +578,9 @@ export function App() {
       <footer className="footer">
         <p>
           Local · Not a medical device · Built for BCI users ·{" "}
-          <span className="dim">P pause · U undo · R rest · F resume</span>
+          <span className="dim">
+            P pause · F resume · U undo · R rest · S start · Space select in scan
+          </span>
         </p>
       </footer>
     </div>

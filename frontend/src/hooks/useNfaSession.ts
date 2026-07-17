@@ -53,6 +53,10 @@ export type NfaState = {
     auto_start_on_preset?: boolean;
     scan_mode?: boolean;
     scan_interval_ms?: number;
+    announce_actions?: boolean;
+    keyboard_map?: Array<{ code?: string; key?: string; label?: string; intent?: string }>;
+    scan_presets_ms?: number[];
+    dwell_presets_ms?: number[];
     css?: Record<string, string>;
   };
   session_health?: {

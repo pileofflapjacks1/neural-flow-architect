@@ -223,11 +223,20 @@ class SessionController:
             "suggest_recipe_from_app": p.suggest_recipe_from_app,
             "scan_mode": p.scan_mode,
             "scan_interval_ms": p.scan_interval_ms,
+            "announce_actions": bool(getattr(p, "announce_actions", True)),
+            "keyboard_map": self.keyboard_map_for_ui(),
+            "scan_presets_ms": [800, 1400, 2000],
+            "dwell_presets_ms": [800, 1200, 1800],
             "css": {
                 "--nfa-scale": str(p.ui_scale),
                 "--target-min": f"{int(64 * p.ui_scale)}px",
             },
         }
+
+    def keyboard_map_for_ui(self) -> list[dict[str, str]]:
+        from neural_flow_architect.core.multimodal import keymap_for_ui
+
+        return keymap_for_ui()
 
     def subscribe(self) -> asyncio.Queue[dict[str, Any]]:
         q: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=8)
@@ -541,6 +550,7 @@ class SessionController:
             "quiet_hours_end",
             "scan_mode",
             "scan_interval_ms",
+            "announce_actions",
         }
         for key, val in kwargs.items():
             if key in allowed and val is not None:
