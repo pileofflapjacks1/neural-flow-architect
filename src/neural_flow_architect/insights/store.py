@@ -63,6 +63,7 @@ class SessionSummary:
     block_review: BlockReview | None = None
     recipe: str = "study"
     hour_started: int | None = None
+    timeline: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -79,6 +80,7 @@ class SessionSummary:
             "recipe": self.recipe,
             "hour_started": self.hour_started,
             "block_review": self.block_review.to_dict() if self.block_review else None,
+            "timeline": self.timeline[-200:],
             "flow_minutes": sum(
                 v
                 for k, v in self.state_minutes.items()
@@ -125,22 +127,53 @@ class InsightsStore:
             self._current.state_minutes[key] = (
                 self._current.state_minutes.get(key, 0.0) + delta_min
             )
+        # Timeline: only on state changes (keeps log small for long sessions)
+        if self._last_state is None or estimate.state != self._last_state:
+            self._append_timeline(
+                "state",
+                {
+                    "state": estimate.state.value,
+                    "engagement": round(estimate.engagement, 3),
+                    "confidence": round(estimate.confidence, 3),
+                },
+            )
         self._last_state = estimate.state
         self._last_ts = now
         self._current.peak_engagement = max(
             self._current.peak_engagement, estimate.engagement
         )
 
-    def observe_action(self, explanation_text: str) -> None:
+    def observe_action(self, explanation_text: str, *, tool_id: str = "") -> None:
         if self._current is None:
             return
         self._current.actions_count += 1
         self._current.explanations.append(explanation_text)
+        self._append_timeline(
+            "action",
+            {"tool_id": tool_id, "text": explanation_text[:200]},
+        )
 
     def observe_undo(self) -> None:
         if self._current is None:
             return
         self._current.undos_count += 1
+        self._append_timeline("undo", {})
+
+    def _append_timeline(self, kind: str, detail: dict[str, Any]) -> None:
+        if self._current is None:
+            return
+        elapsed = 0.0
+        if self._current.started_at:
+            elapsed = (datetime.utcnow() - self._current.started_at).total_seconds()
+        self._current.timeline.append(
+            {
+                "t_sec": round(elapsed, 1),
+                "kind": kind,
+                "detail": detail,
+            }
+        )
+        if len(self._current.timeline) > 300:
+            self._current.timeline = self._current.timeline[-300:]
 
     def add_label(
         self,

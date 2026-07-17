@@ -197,14 +197,25 @@ nfa eval --duration 20 --recipe study
 nfa bench --channels 8 --iterations 40
 nfa contract --adapter simulator   # adapter golden suite
 nfa contract --adapter replay
-nfa report                         # local trust + session summary
+nfa report                         # trust + policy scoreboard
+nfa report --json                  # machine-readable scoreboard
 nfa soak --duration 300            # multi-minute simulated soak (fast wall clock)
 ```
 
-Optional app-aware protection (local window titles only):
+Optional app-aware protection (local window titles only). Edit the map under
+**Insights → App → category map** or `data/profiles/app_categories.json`:
 
 ```bash
 NFA_DETECT_ACTIVE_APP=true nfa serve
+```
+
+Optional OS Focus / DND companion (dry-run by default — no system change until you opt in):
+
+```bash
+NFA_OS_FOCUS_ENABLED=true nfa serve
+# live attempt only if you also set:
+# NFA_OS_FOCUS_FORCE_DRY_RUN=false
+# (macOS: Shortcuts named "NFA Focus On" / "NFA Focus Off")
 ```
 
 **Fail-safe:** Pause always works; low quality / stream stall blocks proactive IoT.  

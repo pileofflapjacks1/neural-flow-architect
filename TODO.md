@@ -53,7 +53,7 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Quiet hours soft policy
 - [x] Soft recipe suggestions from app category
 - [x] Trust panel + audit in Insights UI
-- [x] `nfa report` CLI
+- [x] `nfa report` CLI (+ `--json` scoreboard)
 - [x] Version 0.2.0
 - [x] End-of-block session review
 - [x] Scan/dwell sequential control mode
@@ -63,6 +63,10 @@ Check items as they ship. Prefer small, reviewable PRs.
 - [x] Good-first-issues list (docs/CONTRIBUTING_ISSUES.md)
 - [x] Dwell-fill targets (Pause/Undo/Rest + scan auto-select)
 - [x] Block-review → threshold/policy learning
+- [x] User-editable app→category map (JSON + Insights UI)
+- [x] OS Focus / DND hooks (dry-run default; Shortcuts / gsettings stubs)
+- [x] Policy scoreboard (`GET /scoreboard`, Insights UI)
+- [x] Session timeline (state/action/undo) API + UI
 - [x] Quality metrics (clip/flat/noise/dropout heuristics + overall score)
 - [x] Multi-dimensional flow scores (engagement, arousal, self-ref proxy, confidence)
 - [x] Optional connectivity feature flag (`include_connectivity`)
@@ -79,6 +83,7 @@ Check items as they ship. Prefer small, reviewable PRs.
 ### Environment
 - [x] OS notification suppression hooks (platform modules + null default)
 - [x] Focus mode: reduce UI chrome in companion UI (in-process density/focus)
+- [x] OS Focus / DND best-effort (`NFA_OS_FOCUS_*`, dry-run default)
 - [x] Home Assistant optional integration (soft-fail; `NFA_IOT_ENABLED` + URL/token)
 - [x] Safe action simulation mode (“dry run”) always available
 

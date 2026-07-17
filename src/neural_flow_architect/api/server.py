@@ -117,6 +117,20 @@ class CaregiverItemBody(BaseModel):
     done: bool = True
 
 
+class AppMapBody(BaseModel):
+    key: str
+    category: str
+
+
+class AppMapDeleteBody(BaseModel):
+    key: str
+
+
+class OsFocusBody(BaseModel):
+    enabled: bool | None = None
+    force_dry_run: bool | None = None
+
+
 def create_app(
     settings: Settings | None = None,
     controller: SessionController | None = None,
@@ -289,6 +303,36 @@ def create_app(
     @app.post("/caregiver")
     async def caregiver_post(body: CaregiverItemBody) -> dict[str, Any]:
         return session.mark_caregiver_item(body.item_id, body.done)
+
+    @app.get("/scoreboard")
+    async def scoreboard() -> dict[str, Any]:
+        return {"ok": True, "scoreboard": session.policy_scoreboard()}
+
+    @app.get("/timeline")
+    async def timeline(session_id: str | None = None) -> dict[str, Any]:
+        return session.session_timeline(session_id)
+
+    @app.get("/app_map")
+    async def app_map_get() -> dict[str, Any]:
+        return {"ok": True, **session.get_app_map()}
+
+    @app.post("/app_map")
+    async def app_map_set(body: AppMapBody) -> dict[str, Any]:
+        return session.set_app_map_entry(body.key, body.category)
+
+    @app.post("/app_map/delete")
+    async def app_map_delete(body: AppMapDeleteBody) -> dict[str, Any]:
+        return session.remove_app_map_entry(body.key)
+
+    @app.get("/os_focus")
+    async def os_focus_get() -> dict[str, Any]:
+        return session.os_focus_status()
+
+    @app.post("/os_focus")
+    async def os_focus_post(body: OsFocusBody) -> dict[str, Any]:
+        return session.set_os_focus(
+            enabled=body.enabled, force_dry_run=body.force_dry_run
+        )
 
     @app.get("/environment")
     async def environment() -> dict[str, Any]:

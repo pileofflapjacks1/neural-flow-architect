@@ -8,6 +8,7 @@ from neural_flow_architect.core.active_app import (
     categorize_app,
     detect_active_app,
     recipe_hint_for_category,
+    _USER_MAP,
 )
 from neural_flow_architect.core.types import ContextSnapshot
 
@@ -44,7 +45,9 @@ def enrich_context(
             ctx.app_category = detected.category
     if active_app is not None:
         ctx.active_app = active_app
-        ctx.app_category = app_category or categorize_app(active_app)
+        ctx.app_category = app_category or categorize_app(
+            active_app, user_map=_USER_MAP
+        )
     elif app_category is not None:
         ctx.app_category = app_category
 

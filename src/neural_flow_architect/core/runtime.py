@@ -24,6 +24,7 @@ from neural_flow_architect.core.types import (
     WorldSnapshot,
 )
 from neural_flow_architect.environment.digital import DigitalOrchestrator
+from neural_flow_architect.environment.os_focus import OSFocusController
 from neural_flow_architect.environment.os_notifications import build_notification_backend
 from neural_flow_architect.environment.physical import PhysicalOrchestrator
 from neural_flow_architect.flow.engine import FlowEngine
@@ -84,6 +85,10 @@ class NeuralFlowRuntime:
         self.notifications = build_notification_backend(
             enabled=self.settings.os_notifications,
             announce=self.settings.os_notifications_announce,
+        )
+        self.os_focus = OSFocusController(
+            enabled=getattr(self.settings, "os_focus_enabled", False),
+            force_dry_run=getattr(self.settings, "os_focus_force_dry_run", True),
         )
         self.undo_stack = undo_stack or UndoStack()
         self.failsafe = failsafe or FailSafeGuard(
@@ -289,8 +294,13 @@ class NeuralFlowRuntime:
             preferences=prefs,
         )
         decision = await self.architect.step(snapshot)
-        for exp in decision.explanations:
-            self.insights.observe_action(exp.text)
+        for exp, res in zip(decision.explanations, decision.results, strict=False):
+            self.insights.observe_action(exp.text, tool_id=res.tool_id)
+            # Best-effort OS Focus alongside focus tools
+            if res.success and res.tool_id == "focus.enable":
+                self.os_focus.enable_focus()
+            if res.success and res.tool_id in {"focus.disable", "notify.allow_all"}:
+                self.os_focus.restore()
         return decision
 
     def stop(self) -> None:

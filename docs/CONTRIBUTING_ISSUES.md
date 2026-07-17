@@ -12,8 +12,9 @@ Use these labels when filing issues on GitHub: `good first issue`, `docs`, `bci-
 6. **privacy:** Add unit test that audit log never accepts a `data` detail key.  
 7. **flow-science:** Document that engagement_proxy is not clinical flow.  
 8. **frontend:** Screen-reader live region for fail-safe banner.  
-9. **cli:** `nfa report --json` machine-readable output.  
-10. **recipes:** User-editable app→category map JSON under `data/profiles/`.  
+9. **frontend:** Timeline filter chips (state / action / undo only).  
+10. **os-focus:** Windows Focus Assist bridge (still dry-run safe by default).  
+11. **scoreboard:** Sparkline of policy score across last N sessions.  
 
 ## Design constraints for all issues
 

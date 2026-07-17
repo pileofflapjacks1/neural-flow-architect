@@ -36,6 +36,9 @@ from neural_flow_architect.privacy.consent import ConsentScope
 from neural_flow_architect.core.quiet_hours import QuietHours
 from neural_flow_architect.core.caregiver import CaregiverChecklist
 from neural_flow_architect.personalization.signature import build_personal_signature
+from neural_flow_architect.core.app_map import AppCategoryMap
+from neural_flow_architect.core.active_app import set_user_category_map
+from neural_flow_architect.insights.scoreboard import build_policy_scoreboard
 
 
 StateListener = Callable[[dict[str, Any]], None]
@@ -70,6 +73,10 @@ class SessionController:
         self.caregiver = CaregiverChecklist.load(
             self.settings.data_dir / "profiles" / "caregiver_checklist.json"
         )
+        self.app_map = AppCategoryMap.load(
+            self.settings.data_dir / "profiles" / "app_categories.json"
+        )
+        set_user_category_map(self.app_map)
         self._pending_block_review: dict[str, Any] | None = None
         self.runtime = self._new_runtime()
         self._task: asyncio.Task[list[RuntimeTick]] | None = None
@@ -924,6 +931,68 @@ class SessionController:
         sessions = self.list_sessions(limit=50)
         return build_personal_signature(sessions).to_dict()
 
+    def policy_scoreboard(self) -> dict[str, Any]:
+        sessions = self.list_sessions(limit=50)
+        fb = self.feedback.as_dict().get("history") or []
+        return build_policy_scoreboard(sessions, feedback_history=fb)
+
+    def get_app_map(self) -> dict[str, Any]:
+        return self.app_map.to_dict()
+
+    def set_app_map_entry(self, key: str, category: str) -> dict[str, Any]:
+        self.app_map.set_entry(key, category)
+        self.app_map.save(self.settings.data_dir / "profiles" / "app_categories.json")
+        set_user_category_map(self.app_map)
+        self.audit.record("app_map.set", f"{key} → {category}")
+        return {"ok": True, **self.app_map.to_dict()}
+
+    def remove_app_map_entry(self, key: str) -> dict[str, Any]:
+        self.app_map.remove_entry(key)
+        self.app_map.save(self.settings.data_dir / "profiles" / "app_categories.json")
+        set_user_category_map(self.app_map)
+        return {"ok": True, **self.app_map.to_dict()}
+
+    def session_timeline(self, session_id: str | None = None) -> dict[str, Any]:
+        if session_id is None:
+            snap = self.runtime.insights.snapshot_current()
+            if snap:
+                return {
+                    "ok": True,
+                    "session_id": snap.get("session_id"),
+                    "timeline": snap.get("timeline") or [],
+                    "live": True,
+                }
+            sessions = self.list_sessions(limit=1)
+            if not sessions:
+                return {"ok": False, "message": "No session", "timeline": []}
+            return {
+                "ok": True,
+                "session_id": sessions[0].get("session_id"),
+                "timeline": sessions[0].get("timeline") or [],
+                "live": False,
+            }
+        for s in self.list_sessions(limit=50):
+            if s.get("session_id") == session_id:
+                return {
+                    "ok": True,
+                    "session_id": session_id,
+                    "timeline": s.get("timeline") or [],
+                    "live": False,
+                }
+        return {"ok": False, "message": "Session not found", "timeline": []}
+
+    def os_focus_status(self) -> dict[str, Any]:
+        return {"ok": True, "os_focus": self.runtime.os_focus.status()}
+
+    def set_os_focus(self, *, enabled: bool | None = None, force_dry_run: bool | None = None) -> dict[str, Any]:
+        if enabled is not None:
+            self.settings.os_focus_enabled = enabled
+            self.runtime.os_focus.enabled = enabled
+        if force_dry_run is not None:
+            self.settings.os_focus_force_dry_run = force_dry_run
+            self.runtime.os_focus.force_dry_run = force_dry_run
+        return self.os_focus_status()
+
     def caregiver_checklist(self) -> dict[str, Any]:
         return self.caregiver.to_dict()
 
@@ -1097,6 +1166,7 @@ class SessionController:
         return {
             "ok": True,
             "iot": self.runtime.physical.status(),
+            "os_focus": self.runtime.os_focus.status(),
             "agent_dry_run": self.runtime.architect.dry_run,
             "iot_force_dry_run": self.runtime.physical.force_dry_run,
             "detect_active_app": self.settings.detect_active_app,

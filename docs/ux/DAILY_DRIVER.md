@@ -47,6 +47,19 @@ When you **Stop session**, a short review asks if the block (and co-pilot) helpe
 
 Reviews also feed the personal flow signature (`GET /signature`).
 
+## Policy scoreboard & timeline
+
+Open **Insights** (full mode) for:
+
+| Panel | Source |
+|---|---|
+| Policy scoreboard | `GET /scoreboard` — undos, block reviews, trust → 0–100 |
+| Session timeline | `GET /timeline` — state changes, tools, undos |
+| App → category map | `GET/POST /app_map` — local JSON overrides for active-app recipes |
+| OS Focus / DND | `GET/POST /os_focus` — dry-run default; live only when enabled |
+
+CLI: `nfa report` and `nfa report --json` (no raw neural data).
+
 ## Accessibility
 
 Open **Access** tab (full mode) or API `POST /a11y`:

@@ -68,6 +68,10 @@ class Settings(BaseSettings):
     os_notifications: bool = False
     os_notifications_announce: bool = False
 
+    # OS Focus / DND (best-effort; dry-run default)
+    os_focus_enabled: bool = False
+    os_focus_force_dry_run: bool = True
+
     iot_enabled: bool = False
     iot_force_dry_run: bool = True  # never hit HA until explicitly set false
     home_assistant_url: str = ""

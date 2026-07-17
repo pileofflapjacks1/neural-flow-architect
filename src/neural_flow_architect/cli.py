@@ -114,19 +114,32 @@ def soak(
 @app.command()
 def report(
     data_dir: Optional[str] = typer.Option(None, help="Override data directory"),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable JSON output"),
 ) -> None:
-    """Print local trust + session summary report (no raw neural data)."""
+    """Print local trust + policy scoreboard (no raw neural data)."""
+    import json as json_lib
     from pathlib import Path
 
     from neural_flow_architect.core.session import SessionController
-    from neural_flow_architect.insights.trust import compute_trust_metrics
 
     settings = get_settings()
     if data_dir:
         settings.data_dir = Path(data_dir)
     session = SessionController(settings)
     trust = session.trust_metrics()
+    scoreboard = session.policy_scoreboard()
     sessions = session.list_sessions()
+    payload = {
+        "trust": trust.get("trust"),
+        "scoreboard": scoreboard,
+        "sessions_on_disk": len(sessions),
+        "iot": trust.get("iot"),
+        "os_focus": session.runtime.os_focus.status(),
+    }
+    if as_json:
+        console.print_json(json_lib.dumps(payload))
+        return
+
     _banner()
     t = trust.get("trust") or {}
     table = Table(title="Trust report", show_header=True, header_style="bold")
@@ -144,6 +157,10 @@ def report(
     ):
         table.add_row(k, str(t.get(k, "—")))
     console.print(table)
+    sb = scoreboard
+    console.print(
+        f"[cyan]Policy score:[/] {sb.get('score')} — {sb.get('interpretation')}"
+    )
     console.print(f"[dim]Sessions on disk: {len(sessions)}[/]")
     if sessions:
         s0 = sessions[0]
@@ -152,6 +169,7 @@ def report(
             f"peak={s0.get('peak_engagement')} flow_min={s0.get('flow_minutes')}[/]"
         )
     console.print(f"[dim]IoT mode: {(trust.get('iot') or {}).get('mode')}[/]")
+    console.print(f"[dim]OS Focus: {session.runtime.os_focus.status().get('mode')}[/]")
 
 
 @app.command("contract")

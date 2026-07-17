@@ -49,9 +49,21 @@ _SOCIAL = re.compile(
 _SYSTEM = re.compile(r"finder|explorer|system settings|activity monitor|dock", re.I)
 
 
-def categorize_app(name: str | None) -> str:
+def categorize_app(
+    name: str | None,
+    *,
+    user_map: Any | None = None,
+) -> str:
+    """
+    Categorize app name. Optional ``user_map`` is an AppCategoryMap instance
+    checked first; built-in regexes remain as fallback.
+    """
     if not name:
         return "unknown"
+    if user_map is not None:
+        custom = user_map.categorize(name, fallback="")
+        if custom:
+            return custom
     if _SOCIAL.search(name):
         return "social"
     if _CREATE.search(name):
@@ -80,6 +92,15 @@ def detect_active_app(*, enabled: bool = False) -> AppContext:
     return AppContext(source=f"unsupported:{system}")
 
 
+_USER_MAP: Any | None = None
+
+
+def set_user_category_map(user_map: Any | None) -> None:
+    """Inject AppCategoryMap used by detect_active_app (optional)."""
+    global _USER_MAP
+    _USER_MAP = user_map
+
+
 def _macos_frontmost() -> AppContext:
     script = (
         'tell application "System Events" to get name of first application process '
@@ -95,7 +116,7 @@ def _macos_frontmost() -> AppContext:
     name = (proc.stdout or "").strip() or None
     return AppContext(
         app_name=name,
-        category=categorize_app(name),
+        category=categorize_app(name, user_map=_USER_MAP),
         source="macos",
     )
 
@@ -112,7 +133,9 @@ def _linux_frontmost() -> AppContext:
     if proc.returncode != 0:
         return AppContext(source="linux-unavailable")
     name = (proc.stdout or "").strip() or None
-    return AppContext(app_name=name, category=categorize_app(name), source="linux")
+    return AppContext(
+        app_name=name, category=categorize_app(name, user_map=_USER_MAP), source="linux"
+    )
 
 
 def _windows_frontmost() -> AppContext:
@@ -133,7 +156,9 @@ def _windows_frontmost() -> AppContext:
         check=False,
     )
     name = (proc.stdout or "").strip() or None
-    return AppContext(app_name=name, category=categorize_app(name), source="windows")
+    return AppContext(
+        app_name=name, category=categorize_app(name, user_map=_USER_MAP), source="windows"
+    )
 
 
 def recipe_hint_for_category(category: str) -> str | None:

@@ -79,6 +79,10 @@ timeline
 - [x] Signal quality gates  
 - [x] Predictive precursors (opt-in)  
 - [x] OS notification hooks (best-effort)  
+- [x] User-editable app→category map  
+- [x] OS Focus / DND hooks (dry-run default; live Shortcuts/gsettings optional)  
+- [x] Policy scoreboard + `nfa report --json`  
+- [x] Session timeline (state / action / undo)  
 
 **Exit criteria**
 
@@ -86,7 +90,7 @@ timeline
 - IoT actions safe under dry-run and rate limits  
 - Undo rate trending down for default protect tools  
 
-**Status:** Phase 2 complete for open-source foundation (July 2026). Remaining polish: full LLM tool-calling planner, OS Focus Mode deep integration, richer BrainFlow live validation.  
+**Status:** Phase 2 complete for open-source foundation (July 2026). Remaining polish: full LLM tool-calling planner, deeper live OS Focus on each platform, richer BrainFlow live validation.  
 
 ---
 

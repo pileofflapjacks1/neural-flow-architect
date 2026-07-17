@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { TrustPanel } from "./TrustPanel";
+import { ScoreboardPanel } from "./ScoreboardPanel";
+import { TimelinePanel } from "./TimelinePanel";
+import { AppMapPanel } from "./AppMapPanel";
 
 const API_BASE = import.meta.env.VITE_NFA_API ?? "http://127.0.0.1:8741";
 
@@ -38,6 +41,8 @@ export function InsightsPanel({
   return (
     <section className="insights">
       <TrustPanel />
+      <ScoreboardPanel />
+      <TimelinePanel />
 
       {recipeSuggestion && (
         <div className="banner info" role="status">
@@ -139,6 +144,8 @@ export function InsightsPanel({
         Audit and summaries stay on this device. Raw neural samples are not
         logged.
       </p>
+
+      <AppMapPanel />
     </section>
   );
 }
