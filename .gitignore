@@ -48,8 +48,10 @@ Thumbs.db
 
 # Neural / session data (never commit real neural data)
 data/sessions/
+data/profiles/
 data/models/user_*
 data/private/
+data/logs/
 *.nfa-session
 *.nfa-features
 *.edf
