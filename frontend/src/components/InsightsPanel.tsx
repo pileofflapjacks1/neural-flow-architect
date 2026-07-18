@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { TrustPanel } from "./TrustPanel";
 import { WeeklyRecapPanel } from "./WeeklyRecapPanel";
+import { SessionRecapPanel } from "./SessionRecapPanel";
+import { HybridMlPanel } from "./HybridMlPanel";
 import { ScoreboardPanel } from "./ScoreboardPanel";
 import { TimelinePanel } from "./TimelinePanel";
 import { AppMapPanel } from "./AppMapPanel";
@@ -14,6 +16,8 @@ type Props = {
   recipeSuggestion?: Record<string, unknown> | null;
   auditRecent?: Array<Record<string, unknown>>;
   onAcceptRecipe?: () => void;
+  running?: boolean;
+  learningMessage?: string | null;
 };
 
 export function InsightsPanel({
@@ -23,6 +27,8 @@ export function InsightsPanel({
   recipeSuggestion,
   auditRecent = [],
   onAcceptRecipe,
+  running = false,
+  learningMessage = null,
 }: Props) {
   const [events, setEvents] = useState<Array<Record<string, unknown>>>(auditRecent);
 
@@ -39,9 +45,14 @@ export function InsightsPanel({
       });
   }, [session?.session_id]);
 
+  const sessionId =
+    session?.session_id != null ? String(session.session_id) : null;
+
   return (
     <section className="insights">
       <WeeklyRecapPanel />
+      <SessionRecapPanel sessionId={sessionId} running={running} />
+      <HybridMlPanel learningHint={learningMessage} />
       <TrustPanel />
       <ScoreboardPanel />
       <TimelinePanel />

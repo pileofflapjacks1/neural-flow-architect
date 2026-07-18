@@ -512,6 +512,8 @@ export function App() {
                 recipeSuggestion={state.recipe_suggestion}
                 auditRecent={state.audit_recent}
                 onAcceptRecipe={() => acceptRecipeSuggestion()}
+                running={state.running}
+                learningMessage={state.learning?.message ?? null}
               />
             )}
             {!simple && tab === "coaching" && (

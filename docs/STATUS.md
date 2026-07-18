@@ -74,6 +74,7 @@ Custom lightweight agent (not LangChain) — intentional for latency, offline, a
 | Trust + policy scoreboard + weekly recap | ✅ | `trust.py`, `scoreboard.py` |
 | **Post-session helped/hurt recap** | ✅ | `session_recap.py`, `GET /session/recap` |
 | Companion Insights UI | ✅ | `frontend/` Insights tab |
+| Session recap + Hybrid ML panels | ✅ | `SessionRecapPanel`, `HybridMlPanel` |
 
 ---
 

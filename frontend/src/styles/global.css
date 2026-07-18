@@ -615,6 +615,25 @@ html.nfa-reduced-motion .dwell-fill {
   margin-top: 1rem;
 }
 
+/* Session recap helped / hurt */
+.session-recap-panel .recap-helped-title {
+  color: var(--good);
+}
+.session-recap-panel .recap-hurt-title {
+  color: var(--warn);
+}
+.session-recap-panel .recap-list.helped li {
+  border-left: 3px solid var(--good);
+  padding-left: 0.6rem;
+}
+.session-recap-panel .recap-list.hurt li {
+  border-left: 3px solid var(--warn);
+  padding-left: 0.6rem;
+}
+.hybrid-ml-panel .explanation {
+  margin-top: 0.75rem;
+}
+
 /* Keyboard map + a11y presets */
 .keymap-table {
   width: 100%;

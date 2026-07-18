@@ -54,6 +54,8 @@ Open **Insights** (full mode) for:
 | Panel | Source |
 |---|---|
 | **This week** | `GET /weekly?days=7` — window chips 7/14/30d, sparkline, highlights |
+| **Session recap** | `GET /session/recap` — helped / hurt / recommendations for current or last session |
+| **Hybrid flow ML** | `GET /flow/ml` — train status from local “Felt in flow” labels |
 | Policy scoreboard | `GET /scoreboard` — undos, block reviews, trust → 0–100 + recent sparkline |
 | Session timeline | `GET /timeline` — filter chips: All / State / Action / Undo |
 | App → category map | `GET/POST /app_map` — local JSON overrides for active-app recipes |
