@@ -29,6 +29,7 @@ from neural_flow_architect.environment.os_focus import OSFocusController
 from neural_flow_architect.environment.os_notifications import build_notification_backend
 from neural_flow_architect.environment.physical import PhysicalOrchestrator
 from neural_flow_architect.flow.engine import FlowEngine
+from neural_flow_architect.flow.ml_calibrator import FlowMLCalibrator
 from neural_flow_architect.insights.store import InsightsStore
 from neural_flow_architect.privacy.consent import ConsentManager, ConsentScope
 from neural_flow_architect.signal.features import FeatureExtractor
@@ -72,9 +73,20 @@ class NeuralFlowRuntime:
             hop_sec=self.settings.hop_sec,
             include_connectivity=getattr(self.settings, "include_connectivity", False),
         )
+        calibrator: FlowMLCalibrator | None = None
+        if getattr(self.settings, "hybrid_ml_enabled", True):
+            samples = self.settings.data_dir / "profiles" / "flow_ml_samples.jsonl"
+            calibrator = FlowMLCalibrator(
+                samples_path=samples,
+                min_samples=int(getattr(self.settings, "hybrid_ml_min_samples", 8)),
+                blend_weight=float(getattr(self.settings, "hybrid_ml_blend_weight", 0.35)),
+            )
+            calibrator.retrain_from_disk()
+        self.ml_calibrator = calibrator
         self.flow = FlowEngine(
             protect_engagement_threshold=self.settings.protect_engagement_threshold,
             deep_flow_engagement_threshold=self.settings.deep_flow_engagement_threshold,
+            calibrator=calibrator,
         )
         self.digital = DigitalOrchestrator()
         self.physical = PhysicalOrchestrator(

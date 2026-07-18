@@ -134,6 +134,8 @@ module = [
   "brainflow.*",
   "homeassistant_api",
   "homeassistant_api.*",
+  "sklearn",
+  "sklearn.*",
 ]
 ignore_missing_imports = true
 

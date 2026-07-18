@@ -1,0 +1,24 @@
+{
+  "description": "Substring map: if the frontmost app name contains the key (case-insensitive), use that category. Valid: study, create, social, system, unknown.",
+  "map": {
+    "blender": "create",
+    "chrome": "study",
+    "code": "study",
+    "cursor": "study",
+    "discord": "social",
+    "figma": "create",
+    "finder": "system",
+    "firefox": "study",
+    "iterm": "study",
+    "mail": "social",
+    "messages": "social",
+    "notion": "study",
+    "obsidian": "study",
+    "photoshop": "create",
+    "safari": "study",
+    "slack": "social",
+    "teams": "social",
+    "terminal": "study",
+    "zoom": "social"
+  }
+}

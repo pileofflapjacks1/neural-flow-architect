@@ -19,6 +19,7 @@ class SelfReportLabel:
     timestamp: datetime = field(default_factory=datetime.utcnow)
     state_at_label: str = ""
     engagement_at_label: float = 0.0
+    features: dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -27,6 +28,7 @@ class SelfReportLabel:
             "timestamp": self.timestamp.isoformat(),
             "state_at_label": self.state_at_label,
             "engagement_at_label": self.engagement_at_label,
+            "features": self.features,
         }
 
 
@@ -174,6 +176,7 @@ class InsightsStore:
         *,
         state: str = "",
         engagement: float = 0.0,
+        features: dict[str, float] | None = None,
     ) -> SelfReportLabel:
         if self._current is None:
             self.start_session()
@@ -183,6 +186,7 @@ class InsightsStore:
             note=note,
             state_at_label=state,
             engagement_at_label=engagement,
+            features=dict(features or {}),
         )
         self._current.labels.append(label)
         return label

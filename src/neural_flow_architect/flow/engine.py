@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING, Any
 
 from neural_flow_architect.core.types import FeatureWindow, FlowEstimate, FlowState, QualityFlags
+
+if TYPE_CHECKING:
+    from neural_flow_architect.flow.ml_calibrator import FlowMLCalibrator
 
 
 class FlowEngine:
     """
     Multi-dimensional flow-related estimation for prototype use.
+
+    Hybrid: rule-based proxies + optional lightweight ML calibrator
+    (scikit-learn) trained on local self-report labels only.
 
     Scientific humility: outputs are **estimated proxies**, not ground-truth phenomenology.
     """
@@ -19,27 +26,50 @@ class FlowEngine:
         protect_engagement_threshold: float = 0.62,
         deep_flow_engagement_threshold: float = 0.82,
         min_confidence: float = 0.35,
+        calibrator: FlowMLCalibrator | None = None,
     ) -> None:
         self.protect_t = protect_engagement_threshold
         self.deep_t = deep_flow_engagement_threshold
         self.min_confidence = min_confidence
+        self.calibrator = calibrator
         self._state = FlowState.UNKNOWN
         self._state_entered_ns = time.time_ns()
         self._ema_engagement = 0.4
         self._ema_alpha = 0.2
+        self._last_features: dict[str, float] = {}
 
     @property
     def state(self) -> FlowState:
         return self._state
 
+    def set_calibrator(self, calibrator: FlowMLCalibrator | None) -> None:
+        self.calibrator = calibrator
+
+    def set_thresholds(self, protect: float, deep: float) -> None:
+        self.protect_t = float(protect)
+        self.deep_t = float(deep)
+
     def update(self, window: FeatureWindow) -> FlowEstimate:
-        f = window.features
+        f = dict(window.features)
         quality = window.quality
         eng_raw = float(f.get("engagement_proxy", 0.0))
         self._ema_engagement = (
             self._ema_alpha * eng_raw + (1 - self._ema_alpha) * self._ema_engagement
         )
         engagement = float(self._ema_engagement)
+        reasons: list[str] = []
+
+        # Optional hybrid ML blend (local labels only; no raw neural in model)
+        if self.calibrator is not None:
+            engagement, ml_reasons = self.calibrator.blend_engagement(
+                engagement,
+                f,
+                quality_overall=float(quality.overall),
+            )
+            reasons.extend(ml_reasons)
+            # Keep EMA aligned with blended path so state machine is smooth
+            self._ema_engagement = engagement
+
         arousal = float(f.get("arousal_proxy", 0.5))
         # Optimal arousal is mid-high, not max
         arousal_balance = float(max(0.0, 1.0 - abs(arousal - 0.55) / 0.55))
@@ -47,7 +77,6 @@ class FlowEngine:
         ease = float(f.get("ease_proxy", 0.5))
         confidence = _confidence(quality, f)
 
-        reasons: list[str] = []
         new_state = self._transition(
             engagement, arousal_balance, self_ref, ease, confidence, reasons
         )
@@ -57,6 +86,13 @@ class FlowEngine:
             reasons.append(f"transition→{new_state.value}")
 
         minutes = max(0.0, (window.timestamp_ns - self._state_entered_ns) / 1e9 / 60.0)
+        self._last_features = {
+            "engagement_proxy": engagement,
+            "arousal_proxy": arousal,
+            "self_ref_proxy": self_ref,
+            "ease_proxy": ease,
+            "quality_overall": float(quality.overall),
+        }
         return FlowEstimate(
             timestamp_ns=window.timestamp_ns,
             engagement=engagement,
@@ -68,6 +104,9 @@ class FlowEngine:
             minutes_in_state=minutes,
             reasons=reasons,
         )
+
+    def last_feature_snapshot(self) -> dict[str, Any]:
+        return dict(self._last_features)
 
     def _transition(
         self,

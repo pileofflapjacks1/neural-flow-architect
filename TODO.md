@@ -177,7 +177,8 @@ Check items as they ship. Prefer small, reviewable PRs.
 4. ~~Insights weekly recap~~ done  
 5. ~~mypy strict debt + blocking CI~~ done  
 6. ~~Annotated public demo GIF~~ done  
+7. ~~Hybrid ML flow calibrator + post-session recap~~ done  
 
 ---
 
-*Last updated: demo GIF — July 2026*
+*Last updated: hybrid ML + session recap — July 2026*

@@ -31,6 +31,7 @@ from neural_flow_architect.insights.scoreboard import (
     build_policy_scoreboard,
     build_weekly_recap,
 )
+from neural_flow_architect.insights.session_recap import build_session_recap
 from neural_flow_architect.personalization.feedback import FeedbackStore
 from neural_flow_architect.personalization.learning import (
     learn_from_block_review,
@@ -1187,19 +1188,43 @@ class SessionController:
     def label_flow(self, felt_in_flow: bool, note: str = "") -> dict[str, Any]:
         flow = self._latest.get("flow") or {}
         eng = float(flow.get("engagement", 0.0))
+        feat_snap = self.runtime.flow.last_feature_snapshot()
+        if not feat_snap:
+            feat_snap = {
+                "engagement_proxy": eng,
+                "arousal_proxy": float(flow.get("arousal_balance", 0.5)),
+                "self_ref_proxy": float(flow.get("self_ref_proxy", 0.5)),
+                "ease_proxy": float(flow.get("effort_ease", 0.5)),
+                "quality_overall": float(
+                    (self._latest.get("quality") or {}).get("overall", 0.9)
+                ),
+            }
         label = self.runtime.insights.add_label(
             felt_in_flow,
             note=note,
             state=str(flow.get("state", "")),
             engagement=eng,
+            features=feat_snap,
         )
+        # Hybrid ML: append sample + retrain when enough labels
+        ml_status: dict[str, Any] | None = None
+        if self.runtime.ml_calibrator is not None:
+            self.runtime.ml_calibrator.append_sample(
+                feat_snap,
+                felt_in_flow=felt_in_flow,
+                quality_overall=float(feat_snap.get("quality_overall", 0.9)),
+                meta={"source": "live_label"},
+            )
+            ml_status = self.runtime.ml_calibrator.retrain_from_disk().to_dict()
         update = update_thresholds_from_label(
             self.profile,
             felt_in_flow=felt_in_flow,
             engagement_at_label=eng,
         )
-        self.runtime.flow.protect_t = self.profile.protect_engagement_threshold
-        self.runtime.flow.deep_t = self.profile.deep_flow_engagement_threshold
+        self.runtime.flow.set_thresholds(
+            self.profile.protect_engagement_threshold,
+            self.profile.deep_flow_engagement_threshold,
+        )
         self.profile.save(self.settings.data_dir / "profiles")
         state = self.get_state()
         state["session"] = self.runtime.insights.snapshot_current()
@@ -1208,6 +1233,7 @@ class SessionController:
             "message": update.message,
             "protect": update.protect_engagement_threshold,
             "deep": update.deep_flow_engagement_threshold,
+            "hybrid_ml": ml_status,
         }
         state["thresholds"] = {
             "protect": self.profile.protect_engagement_threshold,
@@ -1221,6 +1247,28 @@ class SessionController:
             "learning": state["learning"],
             "state": state,
         }
+
+    def session_recap(self, session_id: str | None = None) -> dict[str, Any]:
+        """Post-session helped/hurt recap (latest or by id)."""
+        if session_id is None:
+            snap = self.runtime.insights.snapshot_current()
+            if snap:
+                return build_session_recap(snap)
+            sessions = self.list_sessions(limit=1)
+            return build_session_recap(sessions[0] if sessions else None)
+        for s in self.list_sessions(limit=50):
+            if s.get("session_id") == session_id:
+                return build_session_recap(s)
+        return build_session_recap(None)
+
+    def hybrid_ml_status(self) -> dict[str, Any]:
+        cal = self.runtime.ml_calibrator
+        if cal is None:
+            return {
+                "enabled": False,
+                "message": "Hybrid ML disabled (NFA_HYBRID_ML_ENABLED=false).",
+            }
+        return {"enabled": True, **cal.status().to_dict()}
 
     def list_sessions(self, limit: int = 20) -> list[dict[str, Any]]:
         return self.runtime.insights.list_sessions(limit=limit)

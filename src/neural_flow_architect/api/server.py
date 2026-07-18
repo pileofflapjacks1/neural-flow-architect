@@ -340,6 +340,16 @@ def create_app(
         days = max(1, min(days, 90))
         return {"ok": True, "recap": session.weekly_recap(days=days)}
 
+    @app.get("/session/recap")
+    async def session_recap(session_id: str | None = None) -> dict[str, Any]:
+        """Post-session helped/hurt summary (local stats only)."""
+        return {"ok": True, "recap": session.session_recap(session_id)}
+
+    @app.get("/flow/ml")
+    async def flow_ml_status() -> dict[str, Any]:
+        """Hybrid ML calibrator status (no raw neural data)."""
+        return {"ok": True, "hybrid_ml": session.hybrid_ml_status()}
+
     @app.get("/timeline")
     async def timeline(session_id: str | None = None) -> dict[str, Any]:
         return session.session_timeline(session_id)

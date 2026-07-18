@@ -49,6 +49,12 @@ See [docs/NOVELTY.md](docs/NOVELTY.md) for the full differentiation brief for co
 
 ---
 
+## What’s implemented
+
+This is past empty scaffolding: flow engine, Architect agent + tools, environment hooks, personalization, insights/weekly recap, BrainFlow path, a11y, and CI all run today.
+
+See **[docs/STATUS.md](docs/STATUS.md)** for a pillar-by-pillar map (including hybrid ML calibrator + post-session recap).
+
 ## Who it is for
 
 **Primary:** People with Neuralink-class high-bandwidth implants (trial and future commercial users), especially those with quadriplegia, ALS, or other severe motor impairments.

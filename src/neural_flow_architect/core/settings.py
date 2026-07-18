@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     protect_engagement_threshold: float = 0.62
     deep_flow_engagement_threshold: float = 0.82
 
+    # Hybrid flow ML (sklearn calibrator from local self-report labels)
+    hybrid_ml_enabled: bool = True
+    hybrid_ml_blend_weight: float = 0.35
+    hybrid_ml_min_samples: int = 8
+
     # Predictive layer (research-grade, off by default)
     predictive_enabled: bool = False
     predictive_min_confidence: float = 0.55
