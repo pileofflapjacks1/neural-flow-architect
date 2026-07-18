@@ -46,7 +46,7 @@ cd ..
 ```bash
 source .venv/bin/activate
 nfa doctor          # health check
-nfa start           # API on 127.0.0.1:8741 + guidance
+nfa start --with-ui   # API :8741 + companion UI :5173
 ```
 
 In another terminal (if using UI):
@@ -55,7 +55,7 @@ In another terminal (if using UI):
 cd frontend && npm run dev
 ```
 
-Open **http://127.0.0.1:5173** and complete the short onboarding cards.
+Open **http://127.0.0.1:5173** (not port 8741) and complete the short onboarding cards.
 
 ### 5. Practice without hardware
 

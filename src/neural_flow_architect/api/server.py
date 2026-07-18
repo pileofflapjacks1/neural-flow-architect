@@ -174,6 +174,25 @@ def create_app(
         allow_headers=["*"],
     )
 
+    @app.get("/")
+    async def root() -> dict[str, Any]:
+        """Friendly landing when someone opens the API port in a browser."""
+        return {
+            "name": "Neural Flow Architect",
+            "version": __version__,
+            "ok": True,
+            "message": (
+                "This is the local API (port 8741), not the companion UI. "
+                "Open the Vite UI at http://127.0.0.1:5173 after: "
+                "nfa start --with-ui   (or: cd frontend && npm install && npm run dev)"
+            ),
+            "ui": "http://127.0.0.1:5173",
+            "health": "/health",
+            "state": "/state",
+            "docs": "/docs",
+            "not_a_medical_device": True,
+        }
+
     @app.get("/health")
     async def health() -> dict[str, Any]:
         return {

@@ -170,15 +170,15 @@ pip install -e ".[dev]"
 
 nfa doctor                  # health check
 nfa doctor --brainflow      # open-EEG path: fixture, latency, optional package
-nfa start                   # local API + clear next steps
-nfa start --with-ui         # API + Vite UI (needs npm install in frontend/)
+nfa start                   # local API on :8741 (not the visual UI)
+nfa start --with-ui         # API + companion UI — open http://127.0.0.1:5173
 ```
 
 Companion UI (if not using `--with-ui`):
 
 ```bash
 cd frontend && npm install && npm run dev
-# open http://127.0.0.1:5173
+# Companion UI: http://127.0.0.1:5173  (API is :8741 — /health only)
 # Onboarding → pick a daily preset → Start session
 # Sticky controls: Pause · Undo · Rest
 # Keyboard: P pause · F resume · U undo · R rest · S start

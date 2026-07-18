@@ -8,11 +8,24 @@
 ```bash
 cd neural-flow-architect
 source .venv/bin/activate   # after first-time install
-nfa start
+nfa start --with-ui
 ```
 
-Then open **http://127.0.0.1:5173** (companion UI) if you use the frontend,  
-or use the API/status output from `nfa start` alone.
+| URL | What it is |
+|---|---|
+| **http://127.0.0.1:5173** | Companion UI — open this |
+| http://127.0.0.1:8741 | API only (`/health`, `/docs`) — not the visual UI |
+
+First run may run `npm install` under `frontend/`. Manual fallback:
+
+```bash
+# Terminal 1
+nfa start
+
+# Terminal 2
+cd frontend && npm install && npm run dev
+# then open http://127.0.0.1:5173
+```
 
 First time only:
 

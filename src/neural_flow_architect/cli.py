@@ -274,49 +274,134 @@ def start(
     if port:
         settings.api_port = port
 
-    ui_proc: subprocess.Popen[str] | None = None
+    ui_proc: subprocess.Popen[bytes] | None = None
+    ui_log: Path | None = None
     repo_root = Path(__file__).resolve().parents[2]
     frontend_dir = repo_root / "frontend"
+    ui_ready = False
+
+    def _ensure_frontend() -> bool:
+        """Install npm deps if needed; return True when Vite can start."""
+        nonlocal ui_log
+        if not shutil.which("npm"):
+            console.print(
+                "[yellow]npm not found.[/] Install Node.js, then:\n"
+                "  [cyan]cd frontend && npm install && npm run dev[/]"
+            )
+            return False
+        if not (frontend_dir / "package.json").exists():
+            console.print(f"[yellow]No frontend at {frontend_dir}[/]")
+            return False
+        node_modules = frontend_dir / "node_modules"
+        if not node_modules.is_dir():
+            console.print(
+                "[yellow]frontend/node_modules missing — running [bold]npm install[/] "
+                "(first time, may take a minute)…[/]"
+            )
+            install = subprocess.run(
+                ["npm", "install"],
+                cwd=str(frontend_dir),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if install.returncode != 0:
+                console.print("[red]npm install failed.[/]")
+                if install.stderr:
+                    console.print(install.stderr[-1500:])
+                console.print(
+                    "Fix: [cyan]cd frontend && npm install && npm run dev[/] "
+                    "then open [cyan]http://127.0.0.1:5173[/]"
+                )
+                return False
+            console.print("[green]npm install complete.[/]")
+        return True
+
+    def _start_vite() -> subprocess.Popen[bytes] | None:
+        nonlocal ui_log, ui_ready
+        ui_log = settings.data_dir / "logs" / "vite-dev.log"
+        ui_log.parent.mkdir(parents=True, exist_ok=True)
+        log_f = open(ui_log, "w", encoding="utf-8")  # noqa: SIM115
+        proc = subprocess.Popen(
+            ["npm", "run", "dev", "--", "--host", "127.0.0.1", "--port", "5173", "--strictPort"],
+            cwd=str(frontend_dir),
+            stdout=log_f,
+            stderr=subprocess.STDOUT,
+        )
+        # Wait briefly for Vite to bind 5173
+        import socket
+        import time
+
+        for _ in range(40):
+            if proc.poll() is not None:
+                log_f.flush()
+                tail = ui_log.read_text(encoding="utf-8", errors="replace")[-1200:]
+                console.print("[red]Vite exited early.[/] Log tail:")
+                console.print(tail or "(empty)")
+                console.print(f"[dim]Full log: {ui_log}[/]")
+                return None
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.2)
+                if s.connect_ex(("127.0.0.1", 5173)) == 0:
+                    ui_ready = True
+                    console.print(
+                        "[green]Companion UI ready:[/] [cyan]http://127.0.0.1:5173[/]\n"
+                        f"[dim]Vite log: {ui_log}[/]"
+                    )
+                    return proc
+            time.sleep(0.25)
+        console.print(
+            "[yellow]Vite still starting…[/] Open [cyan]http://127.0.0.1:5173[/] in a few seconds.\n"
+            f"[dim]If blank, check {ui_log}[/]"
+        )
+        return proc
 
     _banner()
-    ui_hint = (
-        "Companion UI launching via npm (if available)…"
-        if with_ui
-        else "2. In another terminal: [cyan]cd frontend && npm run dev[/]"
-    )
-    console.print(
-        Panel(
-            "[bold]Easy start for daily use[/]\n\n"
-            f"1. API is starting at [cyan]http://{settings.api_host}:{settings.api_port}[/]\n"
-            f"{ui_hint}\n"
-            "3. Open [cyan]http://127.0.0.1:5173[/]\n"
-            "4. Complete onboarding → pick a preset → Start session\n\n"
-            "[bold]Shortcuts:[/] P pause · U undo · R rest · S start · Y/N labels\n"
-            "[dim]Always available: Pause · Undo · Rest[/]\n"
-            "[dim]User guide: docs/ux/USER_GUIDE.md · Caregiver: docs/ux/CAREGIVER_SETUP.md[/]\n"
-            "[dim]Not a medical device. Local-first by default.[/]",
-            border_style="green",
-            title="Neural Flow Architect",
-        )
-    )
     console.print(f"[green]Adapter:[/] {settings.adapter}")
 
-    if with_ui and shutil.which("npm") and (frontend_dir / "package.json").exists():
-        console.print("[green]Starting companion UI…[/]")
-        ui_proc = subprocess.Popen(
-            ["npm", "run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"],
-            cwd=str(frontend_dir),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            text=True,
+    if with_ui:
+        if _ensure_frontend():
+            console.print("[green]Starting companion UI (Vite on :5173)…[/]")
+            ui_proc = _start_vite()
+        else:
+            console.print("[yellow]--with-ui skipped; API only.[/]")
+    else:
+        console.print(
+            Panel(
+                "[bold]API only[/]\n\n"
+                f"API: [cyan]http://{settings.api_host}:{settings.api_port}[/]  "
+                f"(health: [cyan]/health[/])\n"
+                "UI is [bold]not[/] on the API port — run:\n"
+                "  [cyan]cd frontend && npm install && npm run dev[/]\n"
+                "Then open [cyan]http://127.0.0.1:5173[/]\n\n"
+                "Or restart with: [cyan]nfa start --with-ui[/]",
+                border_style="cyan",
+                title="How to open the companion UI",
+            )
         )
-    elif with_ui:
-        console.print("[yellow]--with-ui requested but npm/frontend not ready; API only.[/]")
 
-    if open_browser or with_ui:
+    if with_ui and ui_ready:
+        console.print(
+            Panel(
+                "[bold]Daily use[/]\n\n"
+                f"• API: [cyan]http://{settings.api_host}:{settings.api_port}/health[/]\n"
+                "• UI:  [cyan]http://127.0.0.1:5173[/]  ← open this in the browser\n"
+                "• Onboarding → preset → [bold]Start session[/]\n\n"
+                "[bold]Shortcuts:[/] P pause · U undo · R rest · S start · Y/N labels\n"
+                "[dim]Not a medical device. Local-first by default.[/]",
+                border_style="green",
+                title="Neural Flow Architect",
+            )
+        )
+
+    if (open_browser or with_ui) and ui_ready:
         import webbrowser
 
         webbrowser.open("http://127.0.0.1:5173")
+    elif open_browser and not with_ui:
+        import webbrowser
+
+        webbrowser.open(f"http://{settings.api_host}:{settings.api_port}/")
 
     def _cleanup() -> None:
         if ui_proc is not None and ui_proc.poll() is None:
