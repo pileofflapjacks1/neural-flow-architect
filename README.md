@@ -16,6 +16,29 @@ Neural signals → Flow model → Architect agent → Environment & UI
 
 *Companion UI walkthrough (mockup): live protect → dwell select → Why? feedback → local weekly recap. Research software — not a medical device.*
 
+### NeuraBeach (suite catalog)
+
+**Live listing:** [neurabeach.vercel.app/projects/neural-flow-architect](https://neurabeach.vercel.app/projects/neural-flow-architect)  
+**Suite collection:** [col-neura-suite](https://neurabeach.vercel.app/collections/col-neura-suite) · **Storefront:** [neurabeach.vercel.app](https://neurabeach.vercel.app)
+
+Catalog copy for re-seed: **[`LISTING.md`](./LISTING.md)** · machine metadata: **[`neurabeach-manifest.json`](./neurabeach-manifest.json)**  
+(`suite_role: research`, `safety_class: research_only`, Apache-2.0, Python 3.11+).
+
+| Piece | Role |
+|-------|------|
+| **[NeuraBeach](https://neurabeach.vercel.app)** | Catalog / store — find computer-side BCI tools |
+| **[NeuraBinder](https://neura-binder.vercel.app/demo)** | End-user app + **live** demo |
+| **NeuralBridge** | Intent middleware library (not a hosted app) |
+| **Intent → OS** | Reference OS adapter (Beach packages) |
+| **Neural Flow Architect (this repo)** | **Research** flow co-pilot — CLI + optional local UI |
+
+North star: *Beach is where you find tools; Binder is the live demo; Bridge is how apps share intents.*  
+This project is the **research** layer (flow proxies, local agent, environment hooks). It is **not** Binder’s hosted demo and **not** Bridge middleware.
+
+There is **no** hosted NFA product “Live demo” URL — run locally (`nfa start --with-ui` / `python -m neural_flow_architect --help`).
+
+**Safety:** Independent research / assistive-technology software. **Not** a medical device (SaMD). **Not** implant firmware. **Not affiliated with Neuralink Corp.** User control (Pause / Undo / consent) and local-first neural handling are first-class. “High-bandwidth / intracortical-class **architecture**” means adapter design readiness — not a partnership or clinical claim.
+
 ---
 
 ## Why this exists
@@ -156,11 +179,11 @@ Full design: [docs/architecture/SYSTEM_ARCHITECTURE.md](docs/architecture/SYSTEM
 
 ## Status & disclaimer
 
-**Status:** Public foundation / Phase 0–1 scaffolding. Research and assistive-technology software.
+**Status:** v0.2.0 daily-driver foundation — research and assistive-technology software (CLI + optional local companion UI).
 
-> ⚠️ **Not a medical device.** Neural Flow Architect is **not** intended to diagnose, treat, cure, or prevent any disease. It is not a regulated medical device unless and until appropriately cleared. Use at your own risk. Neural data is highly sensitive — default deployments process data **locally**.
+> ⚠️ **Not a medical device.** Neural Flow Architect is **not** intended to diagnose, treat, cure, or prevent any disease. It is not a regulated medical device (SaMD) unless and until appropriately cleared. It is **not** implant firmware. Use at your own risk. Neural data is highly sensitive — default deployments process data **locally**.
 
-This project is **independent** and not affiliated with Neuralink Corp. unless explicitly stated.
+This project is **independent** and **not affiliated with Neuralink Corp.** “Intracortical-class architecture” describes software adapter boundaries for future high-bandwidth streams — not a vendor partnership or clinical outcome claim.
 
 ---
 
@@ -169,11 +192,13 @@ This project is **independent** and not affiliated with Neuralink Corp. unless e
 Requirements: **Python 3.11+**, macOS/Linux/Windows. Node optional (companion UI).
 
 ```bash
-cd neural-flow-architect   # your clone path
+git clone https://github.com/pileofflapjacks1/neural-flow-architect.git
+cd neural-flow-architect
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 
+python -m neural_flow_architect --help   # package entrypoint
 nfa doctor                  # health check
 nfa doctor --brainflow      # open-EEG path: fixture, latency, optional package
 nfa start                   # local API on :8741 (not the visual UI)

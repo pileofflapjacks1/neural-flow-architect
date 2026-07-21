@@ -1,0 +1,50 @@
+{
+  "manifest_version": "1.0.0",
+  "name": "neural-flow-architect",
+  "display_name": "Neural Flow Architect",
+  "version": "0.2.0",
+  "description": "Research flow-state co-pilot for high-bandwidth BCI computer use: multi-dimensional engagement proxies, proactive local agent, digital/physical environment hooks, and personalization. Local-first CLI (+ optional companion UI). Not a medical device, not implant firmware, not a hosted product demo.",
+  "safety_class": "research_only",
+  "runtime": "cli",
+  "suite_role": "research",
+  "depends_on": [],
+  "category": "research_utility",
+  "license": "apache-2.0",
+  "inputs": [
+    "multichannel_stream",
+    "synthetic",
+    "class_label",
+    "velocity_2d"
+  ],
+  "outputs": ["ui_only", "websocket", "file_export"],
+  "hardware": [
+    "synthetic",
+    "openbci",
+    "generic_intent",
+    "websocket_intent",
+    "lsl"
+  ],
+  "permissions": [
+    "network_local",
+    "filesystem_read",
+    "filesystem_write",
+    "none"
+  ],
+  "dof": "high_dof",
+  "latency_class": "realtime",
+  "platforms": ["macos", "windows", "linux", "web"],
+  "calibration": "optional",
+  "entrypoint": "python -m neural_flow_architect --help",
+  "repository": "https://github.com/pileofflapjacks1/neural-flow-architect",
+  "listing_url": "https://neurabeach.vercel.app/projects/neural-flow-architect",
+  "collection": "col-neura-suite",
+  "min_python": "3.11",
+  "demo_video_url": null,
+  "banned_claims": true,
+  "disclaimers": [
+    "Research / assistive-technology software only — not a medical device (SaMD).",
+    "Not implant firmware and not affiliated with Neuralink Corp.",
+    "User override (Pause / Undo) and local-first privacy are first-class.",
+    "No hosted live product demo; run CLI and optional local frontend yourself."
+  ]
+}

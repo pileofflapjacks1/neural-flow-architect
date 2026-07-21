@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "neural-flow-architect"
 version = "0.2.0"
-description = "Closed-loop, proactive AI co-pilot for high-bandwidth BCI users to detect, protect, and deepen flow states."
+description = "Research flow-state co-pilot for high-bandwidth BCI computer use: local adapters, multi-dimensional flow proxies, proactive agent, environment hooks. Not a medical device or implant firmware."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
