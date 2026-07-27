@@ -1,22 +1,22 @@
 # NeuraBeach listing — Neural Flow Architect
 
-**Source of truth for catalog re-seed** (storefront: [NeuraBeach](https://neurabeach.vercel.app)).  
+**Source of truth for catalog re-seed** (storefront: [NeuraBeach](https://neurabeach.com)).  
 Package metadata machine form: [`neurabeach-manifest.json`](./neurabeach-manifest.json).
 
 | Field | Value |
 |-------|--------|
 | **slug** | `neural-flow-architect` |
-| **title** | Neural Flow Architect |
 | **version** | `0.2.0` |
+| **title** | Neural Flow Architect |
 | **category** | `research_utility` |
 | **featured** | yes |
 | **collection** | `col-neura-suite` |
 | **suite_role** | `research` |
 | **license** | Apache-2.0 (`apache-2.0`) |
 | **GitHub** | https://github.com/pileofflapjacks1/neural-flow-architect |
-| **Live listing** | https://neurabeach.vercel.app/projects/neural-flow-architect |
-| **Suite** | https://neurabeach.vercel.app/collections/col-neura-suite |
-| **Live demo URL** | Browser research demo (synthetic engagement) — deploy frontend with `VITE_NFA_DEMO=true` (see README). Prefer production URL after Vercel deploy, e.g. `https://neural-flow-architect.vercel.app` or project alias. |
+| **Live listing** | https://neurabeach.com/projects/neural-flow-architect |
+| **Suite** | https://neurabeach.com/collections/col-neura-suite |
+| **Live demo URL** | https://neural-flow-architect.vercel.app (Beach `demo_video_url` → **Open live demo**) |
 | **safety_class** | `research_only` |
 | **runtime** | `cli` |
 | **min_python** | `3.11` |
@@ -36,13 +36,15 @@ Closed-loop **research** co-pilot for flow-related engagement on high-bandwidth 
 | Piece | Role |
 |-------|------|
 | **NeuraBeach** | Catalog / store — where you find computer-side BCI tools |
+| **NeuraShell** | Control plane + live demo |
 | **NeuraBinder** | End-user app + live demo |
 | **NeuralBridge** | Intent middleware (library) |
+| **NeuraRoboBridge** | Robot path + sim live demo |
 | **Intent → OS** | Reference OS adapter |
-| **Neural Flow Architect (this)** | **Research** flow co-pilot (`suite_role: research`) |
+| **Neural Flow Architect (this)** | **Research** flow co-pilot (`suite_role: research`) + browser research demo |
 
-North star: *NeuraBeach is where you find tools; NeuraBinder is the live demo; NeuralBridge is how apps share intents.*  
-NFA is the **research** layer — architecture-ready for high-bandwidth streams, usable today with open tools and simulators.
+North star: *Beach finds tools · Shell · Binder · RoboBridge · NFA (research sim) are live demos · Bridge shares app intents.*  
+NFA is the **research** layer — architecture-ready for high-bandwidth streams; hosted demo is synthetic engagement only.
 
 ---
 
@@ -75,7 +77,7 @@ Stills are **product mockups** of the companion UI concept for onboarding/market
 
 ## Safety blurb (required on listing)
 
-> **Research software only.** Neural Flow Architect is not intended to diagnose, treat, cure, or prevent any disease. It is not a regulated medical device (SaMD), not implant firmware, and not affiliated with Neuralink Corp. Neural data defaults to **local** processing. The user remains in control (Pause / Undo / consent). No hosted “Live demo” product URL — run the open-source CLI (and optional local UI) yourself.
+> **Research software only.** Neural Flow Architect is not intended to diagnose, treat, cure, or prevent any disease. It is not a regulated medical device (SaMD), not implant firmware, and not affiliated with Neuralink Corp. Neural data defaults to **local** processing. The user remains in control (Pause / Undo / consent). The **hosted Live demo** is a browser simulator (synthetic engagement only) — full product runs via open-source CLI + optional local UI.
 
 ---
 

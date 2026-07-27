@@ -159,7 +159,12 @@ export function useNfaSession() {
       setConnected(true);
       setError(null);
     });
+    // Auto-start so Beach "Open live demo" visitors see motion immediately
+    const t = window.setTimeout(() => {
+      demo.start("demo_simulator");
+    }, 400);
     return () => {
+      window.clearTimeout(t);
       unsub();
       demo.dispose();
       demoRef.current = null;

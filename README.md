@@ -18,40 +18,42 @@ Neural signals → Flow model → Architect agent → Environment & UI
 
 ### NeuraBeach (suite catalog)
 
-**Live listing:** [neurabeach.vercel.app/projects/neural-flow-architect](https://neurabeach.vercel.app/projects/neural-flow-architect)  
-**Suite collection:** [col-neura-suite](https://neurabeach.vercel.app/collections/col-neura-suite) · **Storefront:** [neurabeach.vercel.app](https://neurabeach.vercel.app)
+**Open live demo:** [neural-flow-architect.vercel.app](https://neural-flow-architect.vercel.app) (synthetic engagement only)  
+**Live listing:** [neurabeach.com/projects/neural-flow-architect](https://neurabeach.com/projects/neural-flow-architect)  
+**Suite collection:** [col-neura-suite](https://neurabeach.com/collections/col-neura-suite) · **Storefront:** [neurabeach.com](https://neurabeach.com)
 
 Catalog copy for re-seed: **[`LISTING.md`](./LISTING.md)** · machine metadata: **[`neurabeach-manifest.json`](./neurabeach-manifest.json)**  
 (`suite_role: research`, `safety_class: research_only`, Apache-2.0, Python 3.11+).
 
 | Piece | Role |
 |-------|------|
-| **[NeuraBeach](https://neurabeach.vercel.app)** | Catalog / store — find computer-side BCI tools |
-| **[NeuraBinder](https://neura-binder.vercel.app/demo)** | End-user app + **live** demo |
+| **[NeuraBeach](https://neurabeach.com)** | Catalog / store — find computer-side BCI tools |
+| **[NeuraShell](https://neurashell-eta.vercel.app/demo)** | Control plane + live demo |
+| **[NeuraBinder](https://neura-binder.vercel.app/demo)** | End-user app + live demo |
 | **NeuralBridge** | Intent middleware library (not a hosted app) |
+| **[NeuraRoboBridge](https://neurarobobridge.vercel.app)** | Robot path + sim live demo |
 | **Intent → OS** | Reference OS adapter (Beach packages) |
-| **Neural Flow Architect (this repo)** | **Research** flow co-pilot — CLI + optional local UI |
+| **Neural Flow Architect (this repo)** | **Research** flow co-pilot — CLI + **hosted browser demo** |
 
-North star: *Beach is where you find tools; Binder is the live demo; Bridge is how apps share intents.*  
-This project is the **research** layer (flow proxies, local agent, environment hooks). It is **not** Binder’s hosted demo and **not** Bridge middleware.
-
-**Browser research demo (synthetic engagement only):** deploy the companion UI with `VITE_NFA_DEMO=true` (see below). This is **not** NeuraBinder’s live demo and **not** a live neural stream.
+North star: *Beach finds tools · Shell · Binder · RoboBridge · NFA (research sim) are live demos · Bridge shares app intents.*  
+This project is the **research** layer (flow proxies, local agent, environment hooks). The hosted demo is **not** a live neural stream and **not** Binder’s product demo.
 
 **Safety:** Independent research / assistive-technology software. **Not** a medical device (SaMD). **Not** implant firmware. **Not affiliated with Neuralink Corp.** User control (Pause / Undo / consent) and local-first neural handling are first-class. “High-bandwidth / intracortical-class **architecture**” means adapter design readiness — not a partnership or clinical claim.
 
 ### Hosted research demo (static UI)
 
-The companion UI can run in **browser demo mode** (client-side synthetic engagement — no Python API required):
+**Production:** [https://neural-flow-architect.vercel.app](https://neural-flow-architect.vercel.app)  
+NeuraBeach **Open live demo** uses this URL. Browser mode runs synthetic engagement only — no Python API, no neural stream.
 
 ```bash
 cd frontend
 npm install
 npm run build:demo
 npm run preview   # local check
-# Deploy repo root with vercel.json (VITE_NFA_DEMO=true) → e.g. https://neural-flow-architect.vercel.app
+# Deploy repo root with vercel.json (VITE_NFA_DEMO=true)
 ```
 
-Or open any local dev build with `http://127.0.0.1:5173/?demo=1`.
+Local: `npm run dev:demo` or open any build with `http://127.0.0.1:5173/?demo=1`.
 
 ---
 

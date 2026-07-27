@@ -242,8 +242,16 @@ export function App() {
 
       {demoMode && (
         <div className="banner info" role="status">
-          <strong>Research browser demo</strong> — synthetic engagement only (no
+          <strong>Live research demo</strong> — synthetic engagement only (no
           neural stream, no implant). Not a medical device.{" "}
+          <a
+            href="https://neurabeach.com/projects/neural-flow-architect"
+            target="_blank"
+            rel="noreferrer"
+          >
+            NeuraBeach listing
+          </a>
+          {" · "}
           <a
             href="https://github.com/pileofflapjacks1/neural-flow-architect"
             target="_blank"

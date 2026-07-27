@@ -118,11 +118,6 @@ export function createDemoController(): DemoController {
     listeners.forEach((fn) => fn({ ...state, flow: { ...state.flow } }));
   };
 
-  const patch = (partial: Partial<NfaState>) => {
-    state = { ...state, ...partial };
-    emit();
-  };
-
   const explain = (action: string, text: string, because: unknown[] = []) => {
     state = {
       ...state,
@@ -221,7 +216,9 @@ export function createDemoController(): DemoController {
           Number((state.session as { peak_engagement?: number })?.peak_engagement || 0),
           eng
         ),
-        flow_minutes: Number((up / 60) * (eng > 0.55 ? eng : 0.2).toFixed(2)),
+        flow_minutes: Number(
+          ((up / 60) * (eng > 0.55 ? eng : 0.2)).toFixed(2)
+        ),
         actions_count: undoStack.length + (state.recent_actions?.length || 0),
         undos_count: Math.max(0, (state.session as { undos_count?: number })?.undos_count || 0),
         labels: [],
