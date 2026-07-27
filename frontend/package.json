@@ -6,8 +6,11 @@
   "description": "BCI-native companion UI scaffold for Neural Flow Architect",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "dev:demo": "VITE_NFA_DEMO=true vite",
+    "build": "vite build",
+    "build:demo": "VITE_NFA_DEMO=true vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "react": "^18.3.1",

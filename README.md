@@ -35,9 +35,23 @@ Catalog copy for re-seed: **[`LISTING.md`](./LISTING.md)** · machine metadata: 
 North star: *Beach is where you find tools; Binder is the live demo; Bridge is how apps share intents.*  
 This project is the **research** layer (flow proxies, local agent, environment hooks). It is **not** Binder’s hosted demo and **not** Bridge middleware.
 
-There is **no** hosted NFA product “Live demo” URL — run locally (`nfa start --with-ui` / `python -m neural_flow_architect --help`).
+**Browser research demo (synthetic engagement only):** deploy the companion UI with `VITE_NFA_DEMO=true` (see below). This is **not** NeuraBinder’s live demo and **not** a live neural stream.
 
 **Safety:** Independent research / assistive-technology software. **Not** a medical device (SaMD). **Not** implant firmware. **Not affiliated with Neuralink Corp.** User control (Pause / Undo / consent) and local-first neural handling are first-class. “High-bandwidth / intracortical-class **architecture**” means adapter design readiness — not a partnership or clinical claim.
+
+### Hosted research demo (static UI)
+
+The companion UI can run in **browser demo mode** (client-side synthetic engagement — no Python API required):
+
+```bash
+cd frontend
+npm install
+npm run build:demo
+npm run preview   # local check
+# Deploy repo root with vercel.json (VITE_NFA_DEMO=true) → e.g. https://neural-flow-architect.vercel.app
+```
+
+Or open any local dev build with `http://127.0.0.1:5173/?demo=1`.
 
 ---
 

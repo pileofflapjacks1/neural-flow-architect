@@ -40,6 +40,7 @@ export function App() {
     state,
     connected,
     error,
+    demoMode,
     start,
     stop,
     setPaused,
@@ -239,7 +240,22 @@ export function App() {
         </div>
       )}
 
-      {error && (
+      {demoMode && (
+        <div className="banner info" role="status">
+          <strong>Research browser demo</strong> — synthetic engagement only (no
+          neural stream, no implant). Not a medical device.{" "}
+          <a
+            href="https://github.com/pileofflapjacks1/neural-flow-architect"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Install the open-source CLI
+          </a>{" "}
+          for a full local stack.
+        </div>
+      )}
+
+      {error && !demoMode && (
         <div className="banner warn" role="alert" aria-live="assertive">
           {error}
           <p className="meta-line">Tip: run <code>nfa start</code> in a terminal.</p>

@@ -16,7 +16,7 @@ Package metadata machine form: [`neurabeach-manifest.json`](./neurabeach-manifes
 | **GitHub** | https://github.com/pileofflapjacks1/neural-flow-architect |
 | **Live listing** | https://neurabeach.vercel.app/projects/neural-flow-architect |
 | **Suite** | https://neurabeach.vercel.app/collections/col-neura-suite |
-| **Live demo URL** | *none* (`null`) — research CLI, not a hosted product |
+| **Live demo URL** | Browser research demo (synthetic engagement) — deploy frontend with `VITE_NFA_DEMO=true` (see README). Prefer production URL after Vercel deploy, e.g. `https://neural-flow-architect.vercel.app` or project alias. |
 | **safety_class** | `research_only` |
 | **runtime** | `cli` |
 | **min_python** | `3.11` |
@@ -27,7 +27,7 @@ Package metadata machine form: [`neurabeach-manifest.json`](./neurabeach-manifes
 
 ## Short description (catalog card)
 
-Closed-loop **research** co-pilot for flow-related engagement on high-bandwidth BCI computer paths: local signal adapters (simulator / optional BrainFlow), multi-dimensional flow proxies, proactive Architect agent, environment hooks, and personalization. **Not a medical device. Not implant firmware. Not the NeuraBinder live demo.**
+Closed-loop **research** co-pilot for flow-related engagement on high-bandwidth BCI computer paths: local signal adapters (simulator / optional BrainFlow), multi-dimensional flow proxies, proactive Architect agent, environment hooks, and personalization. **Not a medical device. Not implant firmware.** Optional **browser research demo** uses synthetic engagement only (not NeuraBinder’s product demo).
 
 ---
 
@@ -141,7 +141,8 @@ Also installed console script: `nfa`.
 When re-seeding from this repo into NeuraBeach:
 
 1. Prefer **this file + `neurabeach-manifest.json`** over hand-edited Beach seed drift.  
-2. Keep `demo_video_url` / live demo CTA **null**.  
+2. **Live demo CTA:** use `demo_url` from manifest (browser research simulator), **not** a fake product SaaS. Label as “Research demo (synthetic)”. Keep `demo_video_url` null unless you host a separate video.  
 3. Keep `suite_role: research` and collection `col-neura-suite`.  
 4. Screenshots: raw.githubusercontent.com paths above (verified public).  
-5. Do not mark NFA as depending on NeuralBridge for install.
+5. Do not mark NFA as depending on NeuralBridge for install.  
+6. After Vercel project is live, set Beach `demo_url` / `live_demo_url` to the production URL if it differs from `https://neural-flow-architect.vercel.app`.

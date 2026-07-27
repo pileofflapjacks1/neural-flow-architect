@@ -85,3 +85,4 @@ configs/secrets.yaml
 # Local audit / runtime
 data/audit/
 *.jsonl
+.vercel

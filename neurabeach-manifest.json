@@ -40,11 +40,15 @@
   "collection": "col-neura-suite",
   "min_python": "3.11",
   "demo_video_url": null,
+  "demo_url": "https://neural-flow-architect.vercel.app",
+  "demo_kind": "browser_research_simulator",
+  "demo_notes": "Static companion UI with synthetic engagement only — not a live neural stream, not medical, not Binder. Full stack remains local CLI.",
   "banned_claims": true,
   "disclaimers": [
     "Research / assistive-technology software only — not a medical device (SaMD).",
     "Not implant firmware and not affiliated with Neuralink Corp.",
     "User override (Pause / Undo) and local-first privacy are first-class.",
-    "No hosted live product demo; run CLI and optional local frontend yourself."
+    "Hosted demo is a browser simulator (synthetic engagement). Full product runs locally via CLI."
   ]
 }
+

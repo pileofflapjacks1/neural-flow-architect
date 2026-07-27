@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createDemoController, shouldUseDemoMode } from "../demo/simulator";
 
 const API_BASE = import.meta.env.VITE_NFA_API ?? "http://127.0.0.1:8741";
 const WS_URL = import.meta.env.VITE_NFA_WS ?? "ws://127.0.0.1:8741/ws/state";
@@ -54,7 +55,12 @@ export type NfaState = {
     scan_mode?: boolean;
     scan_interval_ms?: number;
     announce_actions?: boolean;
-    keyboard_map?: Array<{ code?: string; key?: string; label?: string; intent?: string }>;
+    keyboard_map?: Array<{
+      code?: string;
+      key?: string;
+      label?: string;
+      intent?: string;
+    }>;
     scan_presets_ms?: number[];
     dwell_presets_ms?: number[];
     css?: Record<string, string>;
@@ -136,19 +142,44 @@ async function post(path: string, body?: unknown) {
 }
 
 export function useNfaSession() {
+  const demoMode = shouldUseDemoMode();
   const [state, setState] = useState<NfaState>(defaultState);
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(demoMode);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const demoRef = useRef<ReturnType<typeof createDemoController> | null>(null);
+
+  // —— Browser research demo (hosted / ?demo=1) ——
+  useEffect(() => {
+    if (!demoMode) return;
+    const demo = createDemoController();
+    demoRef.current = demo;
+    const unsub = demo.subscribe((s) => {
+      setState(s);
+      setConnected(true);
+      setError(null);
+    });
+    return () => {
+      unsub();
+      demo.dispose();
+      demoRef.current = null;
+    };
+  }, [demoMode]);
 
   const refresh = useCallback(() => {
+    if (demoMode) {
+      const s = demoRef.current?.getState();
+      if (s) setState(s);
+      return;
+    }
     fetch(`${API_BASE}/state`)
       .then((r) => r.json())
       .then((data) => setState((s) => ({ ...s, ...data })))
       .catch(() => setError("API unreachable — run `nfa start` on port 8741"));
-  }, []);
+  }, [demoMode]);
 
   useEffect(() => {
+    if (demoMode) return;
     let closed = false;
     let retry: number | undefined;
 
@@ -192,103 +223,168 @@ export function useNfaSession() {
       if (retry) window.clearTimeout(retry);
       wsRef.current?.close();
     };
-  }, [refresh]);
+  }, [demoMode, refresh]);
 
-  const start = useCallback(async (adapter?: string) => {
-    setError(null);
-    try {
-      const res = await post("/session/start", { adapter: adapter ?? null });
-      if (res.state) setState((s) => ({ ...s, ...res.state }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "start failed");
-    }
-  }, []);
+  const start = useCallback(
+    async (adapter?: string) => {
+      setError(null);
+      if (demoMode) {
+        demoRef.current?.start(adapter);
+        return;
+      }
+      try {
+        const res = await post("/session/start", { adapter: adapter ?? null });
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "start failed");
+      }
+    },
+    [demoMode]
+  );
 
   const stop = useCallback(async () => {
+    if (demoMode) {
+      demoRef.current?.stop();
+      return;
+    }
     try {
       const res = await post("/session/stop");
       if (res.state) setState((s) => ({ ...s, ...res.state }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "stop failed");
     }
-  }, []);
+  }, [demoMode]);
 
-  const setPaused = useCallback(async (paused: boolean) => {
-    try {
-      const res = await post("/agent/pause", { paused });
-      if (res.state) setState((s) => ({ ...s, ...res.state }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "pause failed");
-    }
-  }, []);
+  const setPaused = useCallback(
+    async (paused: boolean) => {
+      if (demoMode) {
+        demoRef.current?.setPaused(paused);
+        return;
+      }
+      try {
+        const res = await post("/agent/pause", { paused });
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "pause failed");
+      }
+    },
+    [demoMode]
+  );
 
   const undo = useCallback(async () => {
+    if (demoMode) {
+      demoRef.current?.undo();
+      return;
+    }
     try {
       const res = await post("/agent/undo");
       if (res.state) setState((s) => ({ ...s, ...res.state }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "undo failed");
     }
-  }, []);
+  }, [demoMode]);
 
   const restMode = useCallback(async () => {
+    if (demoMode) {
+      demoRef.current?.restMode();
+      return;
+    }
     try {
       const res = await post("/agent/rest");
       if (res.state) setState((s) => ({ ...s, ...res.state }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "rest failed");
     }
-  }, []);
+  }, [demoMode]);
 
-  const label = useCallback(async (felt_in_flow: boolean, note = "") => {
-    try {
-      const res = await post("/session/label", { felt_in_flow, note });
-      if (res.state) setState((s) => ({ ...s, ...res.state }));
-      return res;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "label failed");
-      return null;
-    }
-  }, []);
+  const label = useCallback(
+    async (felt_in_flow: boolean, note = "") => {
+      if (demoMode) {
+        demoRef.current?.label(felt_in_flow);
+        return { ok: true };
+      }
+      try {
+        const res = await post("/session/label", { felt_in_flow, note });
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+        return res;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "label failed");
+        return null;
+      }
+    },
+    [demoMode]
+  );
 
-  const toolPref = useCallback(async (tool_id: string, action: string) => {
-    try {
-      const res = await post("/prefs/tool", { tool_id, action });
-      if (res.state) setState((s) => ({ ...s, ...res.state }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "pref failed");
-    }
-  }, []);
+  const toolPref = useCallback(
+    async (tool_id: string, action: string) => {
+      if (demoMode) {
+        demoRef.current?.feedback(tool_id, action);
+        return;
+      }
+      try {
+        const res = await post("/prefs/tool", { tool_id, action });
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "pref failed");
+      }
+    },
+    [demoMode]
+  );
 
-  const setRecipe = useCallback(async (recipe: string) => {
-    try {
-      const res = await post("/recipe", { recipe });
-      if (res.state) setState((s) => ({ ...s, ...res.state }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "recipe failed");
-    }
-  }, []);
+  const setRecipe = useCallback(
+    async (recipe: string) => {
+      if (demoMode) {
+        demoRef.current?.setRecipe(recipe);
+        return;
+      }
+      try {
+        const res = await post("/recipe", { recipe });
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "recipe failed");
+      }
+    },
+    [demoMode]
+  );
 
-  const setPredictive = useCallback(async (enabled: boolean) => {
-    try {
-      const res = await post("/agent/predictive", { enabled });
-      if (res.state) setState((s) => ({ ...s, ...res.state }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "predictive toggle failed");
-    }
-  }, []);
+  const setPredictive = useCallback(
+    async (enabled: boolean) => {
+      if (demoMode) {
+        demoRef.current?.setPredictive(enabled);
+        return;
+      }
+      try {
+        const res = await post("/agent/predictive", { enabled });
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "predictive toggle failed");
+      }
+    },
+    [demoMode]
+  );
 
-  const setSimpleMode = useCallback(async (enabled: boolean) => {
-    try {
-      const res = await post("/ui/simple_mode", { enabled });
-      if (res.state) setState((s) => ({ ...s, ...res.state }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "simple mode failed");
-    }
-  }, []);
+  const setSimpleMode = useCallback(
+    async (enabled: boolean) => {
+      if (demoMode) {
+        demoRef.current?.setSimpleMode(enabled);
+        return;
+      }
+      try {
+        const res = await post("/ui/simple_mode", { enabled });
+        if (res.state) setState((s) => ({ ...s, ...res.state }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "simple mode failed");
+      }
+    },
+    [demoMode]
+  );
 
   const feedback = useCallback(
     async (tool_id: string, rating: "helpful" | "unhelpful" | "never") => {
+      if (demoMode) {
+        demoRef.current?.feedback(tool_id, rating);
+        return { ok: true };
+      }
       try {
         const res = await post("/agent/feedback", { tool_id, rating });
         if (res.state) setState((s) => ({ ...s, ...res.state }));
@@ -298,42 +394,54 @@ export function useNfaSession() {
         return null;
       }
     },
-    []
+    [demoMode]
   );
 
   const clearFailsafe = useCallback(async () => {
+    if (demoMode) {
+      demoRef.current?.clearFailsafe();
+      return;
+    }
     try {
       const res = await post("/agent/failsafe/clear");
       if (res.state) setState((s) => ({ ...s, ...res.state }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "clear failsafe failed");
     }
-  }, []);
+  }, [demoMode]);
 
   const acceptRecipeSuggestion = useCallback(async () => {
+    if (demoMode) {
+      demoRef.current?.acceptRecipeSuggestion();
+      return;
+    }
     try {
       const res = await post("/recipe/accept_suggestion");
       if (res.state) setState((s) => ({ ...s, ...res.state }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "accept recipe failed");
     }
-  }, []);
+  }, [demoMode]);
 
   const submitBlockReview = useCallback(
-    async (payload: {
+    async (_payload: {
       helpful_block: boolean | null;
       architect_helpful: boolean | null;
       note?: string;
       skip?: boolean;
     }) => {
+      if (demoMode) {
+        demoRef.current?.submitBlockReview();
+        return;
+      }
       try {
-        const res = await post("/session/block_review", payload);
+        const res = await post("/session/block_review", _payload);
         if (res.state) setState((s) => ({ ...s, ...res.state }));
       } catch (e) {
         setError(e instanceof Error ? e.message : "block review failed");
       }
     },
-    []
+    [demoMode]
   );
 
   return {
@@ -341,6 +449,7 @@ export function useNfaSession() {
     connected,
     error,
     apiBase: API_BASE,
+    demoMode,
     start,
     stop,
     setPaused,
