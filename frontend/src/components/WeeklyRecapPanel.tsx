@@ -41,6 +41,39 @@ export function WeeklyRecapPanel() {
 
   useEffect(() => {
     setError(null);
+    const isDemo =
+      import.meta.env.VITE_NFA_DEMO === "true" ||
+      import.meta.env.VITE_NFA_DEMO === "1" ||
+      (typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).get("demo") === "1");
+    if (isDemo) {
+      setRecap({
+        window_days: days,
+        sessions: 3,
+        score: 72,
+        interpretation:
+          "Browser demo sample week — install locally for your real sessions.",
+        trend: "up",
+        totals: {
+          flow_minutes: 28,
+          actions: 12,
+          undos: 1,
+          undo_rate: 0.08,
+        },
+        top_recipe: "study",
+        sparkline: [
+          { score: 58, started_at: "2026-07-01" },
+          { score: 65, started_at: "2026-07-03" },
+          { score: 72, started_at: "2026-07-05" },
+        ],
+        highlights: [
+          "Demo data only (synthetic).",
+          "Full weekly recap uses local session files after CLI use.",
+        ],
+        disclaimer: "Browser research demo — not clinical metrics.",
+      });
+      return;
+    }
     fetch(`${API_BASE}/weekly?days=${days}`)
       .then((r) => r.json())
       .then((d) => setRecap(d.recap || null))

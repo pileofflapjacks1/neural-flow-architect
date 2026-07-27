@@ -36,6 +36,40 @@ export function SessionRecapPanel({ sessionId, running }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    const isDemo =
+      import.meta.env.VITE_NFA_DEMO === "true" ||
+      import.meta.env.VITE_NFA_DEMO === "1" ||
+      (typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).get("demo") === "1");
+    if (isDemo) {
+      setRecap({
+        ok: true,
+        session_id: sessionId || "demo-local-session",
+        recipe: "study",
+        adapter: "demo_simulator",
+        totals: {
+          flow_minutes: running ? 2.5 : 5.0,
+          peak_engagement: 0.78,
+          actions: 3,
+          undos: 0,
+          undo_rate: 0,
+          labels_positive: 1,
+          labels_negative: 0,
+        },
+        helped: [
+          "Browser demo: synthetic engagement rose into flow-like range.",
+          "Pause / Undo stayed available (user control).",
+        ],
+        hurt: ["No live neural stream — install CLI for real adapters."],
+        recommendations: [
+          "Clone the repo and run nfa start --with-ui for the full local stack.",
+        ],
+        disclaimer:
+          "Browser research demo recap — synthetic only, not a medical report.",
+      });
+      setError(null);
+      return;
+    }
     const q =
       sessionId && !running
         ? `?session_id=${encodeURIComponent(sessionId)}`

@@ -21,6 +21,25 @@ export function HybridMlPanel({ learningHint }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    // Browser research demo has no Python API
+    if (
+      import.meta.env.VITE_NFA_DEMO === "true" ||
+      import.meta.env.VITE_NFA_DEMO === "1" ||
+      (typeof window !== "undefined" &&
+        new URLSearchParams(window.location.search).get("demo") === "1")
+    ) {
+      setMl({
+        enabled: true,
+        trained: false,
+        n_samples: 0,
+        n_positive: 0,
+        model: "none",
+        message:
+          "Browser demo: hybrid ML trains only on a local install after “Felt in flow” labels. Synthetic engagement only here.",
+      });
+      setError(null);
+      return;
+    }
     fetch(`${API_BASE}/flow/ml`)
       .then((r) => r.json())
       .then((d) => setMl(d.hybrid_ml || null))
