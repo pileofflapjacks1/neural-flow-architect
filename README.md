@@ -30,7 +30,7 @@ Catalog copy for re-seed: **[`LISTING.md`](./LISTING.md)** · machine metadata: 
 | **[NeuraBeach](https://neurabeach.com)** | Catalog / store — find computer-side BCI tools |
 | **[NeuraShell](https://neurashell-eta.vercel.app/demo)** | Control plane + live demo |
 | **[NeuraBinder](https://neura-binder.vercel.app/demo)** | End-user app + live demo |
-| **NeuralBridge** | Intent middleware library (not a hosted app) |
+| **Neurabridge** | Intent middleware library (not a hosted app) |
 | **[NeuraRoboBridge](https://neurarobobridge.vercel.app)** | Robot path + sim live demo |
 | **Intent → OS** | Reference OS adapter (Beach packages) |
 | **Neural Flow Architect (this repo)** | **Research** flow co-pilot — CLI + **hosted browser demo** |
