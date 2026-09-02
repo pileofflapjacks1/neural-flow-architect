@@ -28,7 +28,9 @@ Catalog copy for re-seed: **[`LISTING.md`](./LISTING.md)** · machine metadata: 
 | Piece | Role |
 |-------|------|
 | **[NeuraBeach](https://neurabeach.com)** | Catalog / store — find computer-side BCI tools |
+| **[NeuraconX](https://neuraconx.vercel.app)** | Catalog connector + live demo |
 | **[NeuraShell](https://neurashell-eta.vercel.app/demo)** | Control plane + live demo |
+| **[NeuraGuard](https://neuraguard.vercel.app/demo)** | Neural-state firewall + live demo |
 | **[NeuraBinder](https://neura-binder.vercel.app/demo)** | End-user app + live demo |
 | **Neurabridge** | Intent middleware library (not a hosted app) |
 | **[NeuraRoboBridge](https://neurarobobridge.vercel.app)** | Robot path + sim live demo |
