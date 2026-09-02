@@ -36,7 +36,9 @@ Closed-loop **research** co-pilot for flow-related engagement on high-bandwidth 
 | Piece | Role |
 |-------|------|
 | **NeuraBeach** | Catalog / store — where you find computer-side BCI tools |
+| **NeuraconX** | Catalog connector + live demo |
 | **NeuraShell** | Control plane + live demo |
+| **NeuraGuard** | Neural-state firewall + live demo |
 | **NeuraBinder** | End-user app + live demo |
 | **Neurabridge** | Intent middleware (library) |
 | **NeuraRoboBridge** | Robot path + sim live demo |
