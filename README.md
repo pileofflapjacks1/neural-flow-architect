@@ -61,7 +61,7 @@ Local: `npm run dev:demo` or open any build with `http://127.0.0.1:5173/?demo=1`
 
 ## Why this exists
 
-People with Neuralink-class intracortical implants often spend **many hours per day** on computers — studying, creating, communicating, gaming, reclaiming independence. Current BCI software is largely **reactive input** (cursor, typing, basic control). Energy cost, fatigue, pain, and context switching still make deep engagement hard to start and harder to sustain.
+High-bandwidth BCI **computer** paths still spend most of the day on ordinary work — studying, creating, communicating, gaming. Current BCI software is largely **reactive input** (cursor, typing, basic control). Fatigue and context switching still make deep engagement hard to start and harder to sustain. This repo is research software: simulator / open adapters today, architecture-ready for future high-bandwidth streams. It is not implant firmware and not a medical device.
 
 **Neural Flow Architect** treats flow not as a wellness gimmick, but as a **first-class control objective**: sense multi-dimensional engagement from neural data, act proactively to protect it, and always leave the human in charge.
 
@@ -81,10 +81,10 @@ As of mid-2026, no public product combines all of the following:
 | Multi-dimensional real-time **flow** modeling | ✅ | Focus only / coarse | ❌ | ❌ |
 | **Proactive** agentic co-pilot (digital + physical) | ✅ | Reactive | Reactive | Limited / offline |
 | Long-term personal **neural flow signatures** | ✅ | Weak | N/A | Limited |
-| Built for **severe motor impairment**, all-day use | ✅ | Consumer wellness | Motor tasks | Lab demos |
+| BCI-native UX for long computer sessions (dwell / low-precision) | ✅ | Consumer wellness | Motor tasks | Lab demos |
 | Local-first, open-source, adapter-based BCI layer | ✅ | Mixed | Mixed | Closed papers |
 
-Closest systems (e.g. consumer EEG “focus” products, motor copilots, lab BMI home-control papers) are usually **non-invasive only**, **purely reactive**, **motor-control focused**, or **research-only**. This project is deliberately different: **flow-first, agentic, privacy-maximal, implant-class ready, usable today with open tools**.
+Closest systems (e.g. consumer EEG “focus” products, motor copilots, lab BMI home-control papers) are usually **non-invasive only**, **purely reactive**, **motor-control focused**, or **research-only**. This project is deliberately different: **flow-first, agentic, privacy-maximal, adapter-ready for high-bandwidth streams, usable today with open tools**.
 
 See [docs/NOVELTY.md](docs/NOVELTY.md) for the full differentiation brief for contributors.
 
@@ -98,9 +98,9 @@ See **[docs/STATUS.md](docs/STATUS.md)** for a pillar-by-pillar map (including h
 
 ## Who it is for
 
-**Primary:** People with Neuralink-class high-bandwidth implants (trial and future commercial users), especially those with quadriplegia, ALS, or other severe motor impairments.
+**Primary:** Researchers and builders of computer-side BCI tools who want a local flow co-pilot (simulator / open EEG adapters today).
 
-**Secondary:** BCI researchers, open-source neurotech developers, caregivers/clinicians evaluating assistive workflows (non-clinical), and builders of privacy-preserving neural agents.
+**Secondary:** Anyone exploring high-bandwidth BCI **computer** workflows. Not a clinical product; not a medical intervention for implant patients. Caregivers/clinicians may evaluate the research UX (non-clinical).
 
 ---
 
@@ -343,7 +343,7 @@ neural-flow-architect/
 
 ## Contributing
 
-We welcome researchers, implant users, caregivers, and engineers. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/NOVELTY.md](docs/NOVELTY.md) before large design changes — **novelty and user control are load-bearing**.
+We welcome researchers, caregivers, and engineers. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/NOVELTY.md](docs/NOVELTY.md) before large design changes — **novelty and user control are load-bearing**.
 
 Accessibility of contribution paths matters: issues labeled `good first issue`, `bci-ux`, `privacy`, and `flow-science` are great entry points.
 
@@ -357,4 +357,4 @@ Apache License 2.0 — see [LICENSE](LICENSE).
 
 ## Human flourishing focus
 
-Neural Flow Architect exists so people who have regained digital access through brain implants can spend more of their precious time in **deep, meaningful, high-agency states of flow** — with technology that amplifies will, never replaces it.
+Neural Flow Architect exists so people spending long sessions on BCI **computer** paths can keep more of that time in **deep, meaningful, high-agency work** — research software that amplifies will, never replaces it. Not a medical device.
